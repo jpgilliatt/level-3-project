@@ -26,5 +26,5 @@ def plot_gaussian(mu=0, sigma=1, xlim=(-5, 5), num_points=1000):
     plt.grid()
     plt.show()
 
-print("Change")
 plot_gaussian(mu=0, sigma=1)
+print("addition")
