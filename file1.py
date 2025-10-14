@@ -37,3 +37,6 @@ plt.title('Black Body Radiation Spectrum')
 plt.legend()
 plt.show()
 
+"test"
+
+
