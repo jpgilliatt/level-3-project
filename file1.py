@@ -28,3 +28,4 @@ def plot_gaussian(mu=0, sigma=1, xlim=(-5, 5), num_points=1000):
 
 plot_gaussian(mu=0, sigma=1)
 print("addition")
+print("subtraction")
