@@ -44,6 +44,11 @@ plt.show()
 ####################################################
 
 
+E490Spectrum = pd.read_csv('E490SolarSpectrum.txt',delim_whitespace=True, header=None, names=['Wavelength_micro_m', 'Irradiance_W_m2_micro_m'])
+E490Spectrum_lamda = E490Spectrum['Wavelength_micro_m'] * 1e-6
+E490Spectrum_v = c / E490Spectrum_lamda
+
+
 
 
 def planck_law_freq(frequency, temperature):
@@ -57,30 +62,45 @@ def planck_law_lamda(wavelength, temperature):
     exponent = (h * c) / (wavelength * k * temperature)
     return (2 * h * c**2) / (wavelength**5 * (np.exp(exponent) - 1))
 
-T_in = np.full(10000, 5770)
-T_out = np.full(10000, 255)
 
-v_sun = np.linspace(1e14, 1e15, 10000)
-v_earth = np.linspace(1e13, 1e14, 10000)
-lamda_sun = np.linspace(0.1e-6, 3e-6, 10000)
-lamda_earth = np.linspace(3e-6, 30e-6, 10000)
+def radiance_freq(B_freq):
+    """Convert spectral iradiance to radiance in frequency domain."""
+    return np.pi * (6.96e8/1.5e11)**2 * B_freq
+
+def radiance_lamda(B_lamda):
+    """Convert spectral iradiance to radiance in wavelength domain."""
+    return np.pi * B_lamda
+
+
+
+T_in = np.full(100000, 5770)
+T_out = np.full(100000, 255)
+
+v = np.linspace(1e14, 1e15, 100000)
+lamda = np.linspace(0.1e-6, 3e-6, 100000)
 
 B_freq_in = planck_law_freq(v, T_in)
+Rad_freq_in = radiance_freq(B_freq_in)
+
 B_freq_out = planck_law_freq(v, T_out)
+Rad_freq_out = radiance_freq(B_freq_out)
 
 B_lamda_in = planck_law_lamda(lamda, T_in)
+Rad_lamda_in = radiance_lamda(B_lamda_in)
+
 B_lamda_out = planck_law_lamda(lamda, T_out)
+Rad_lamda_out = radiance_lamda(B_lamda_out)
 
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-axes[0,0].plot(v, B_freq_in, label=f'Incoming T={5770} K')
-axes[0,0].plot(v, B_freq_out, label=f'Outgoing T={255} K')
+axes[0,0].plot(v, Rad_freq_in, label=f'Incoming T={5770} K')
+axes[0,0].plot(v, Rad_freq_out, label=f'Outgoing T={255} K')
 axes[0,0].set_xlabel('Frequency (Hz)')
 axes[0,0].set_ylabel('Spectral Radiance (W·sr⁻¹·m⁻²·Hz⁻¹)')
 axes[0,0].set_title('Linear scale - Frequency Domain')
 axes[0,0].legend()
 
-axes[0,1].plot(lamda*1e9, B_lamda_in, label=f'Incoming T={5770} K')
-axes[0,1].plot(lamda*1e9, B_lamda_out, label=f'Outgoing T={255} K')
+axes[0,1].plot(lamda*1e9, Rad_lamda_in, label=f'Incoming T={5770} K')
+axes[0,1].plot(lamda*1e9, Rad_lamda_out, label=f'Outgoing T={255} K')
 axes[0,1].set_xlabel('Wavelength (nm)')
 axes[0,1].set_ylabel('Spectral Radiance (W·sr⁻¹·m⁻²·m⁻¹)')
 axes[0,1].set_title('Linear scale - Wavelength Domain')
@@ -105,8 +125,12 @@ plt.show()
 
 
 
+####################################################
+####################################################
+
+
 HITRan_data = pd.read_csv('68f37e77.txt',usecols=[0,1,2], header=0)
-HITRan.columns= ['Wavenumber', 'Intensity', 'gamma_air']
+HITRan_data.columns= ['Wavenumber', 'Intensity', 'gamma_air']
 
 
 
