@@ -57,10 +57,11 @@ def planck_law_freq(frequency, temperature):
     return (2 * h * frequency**3) / (c**2 * (np.exp(exponent) - 1))
 
 
-def planck_law_lamda(wavelength, temperature):
+def planck_law_lamda_um(wavelength_um, temperature):
     """Calculate the spectral radiance of a black body at a given temperature."""
-    exponent = (h * c) / (wavelength * k * temperature)
-    return (2 * h * c**2) / (wavelength**5 * (np.exp(exponent) - 1))
+    wavelength_m = wavelength_um * 1e-6
+    exponent = (h * c) / (wavelength_m * k * temperature)
+    return (2 * h * c**2) / (wavelength_m**5 * (np.exp(exponent) - 1)) * 1e-6  # Convert to per micrometer
 
 
 def radiance_freq(B_freq):
@@ -77,7 +78,7 @@ T_in = np.full(100000, 5770)
 T_out = np.full(100000, 255)
 
 v = np.linspace(1e14, 1e15, 100000)
-lamda = np.linspace(0.1e-6, 3e-6, 100000)
+lamda_um = np.linspace(0.1, 3, 100000)
 
 B_freq_in = planck_law_freq(v, T_in)
 Rad_freq_in = radiance_freq(B_freq_in)
@@ -85,38 +86,38 @@ Rad_freq_in = radiance_freq(B_freq_in)
 B_freq_out = planck_law_freq(v, T_out)
 Rad_freq_out = radiance_freq(B_freq_out)
 
-B_lamda_in = planck_law_lamda(lamda, T_in)
+B_lamda_in = planck_law_lamda_um(lamda_um, T_in)
 Rad_lamda_in = radiance_lamda(B_lamda_in)
 
-B_lamda_out = planck_law_lamda(lamda, T_out)
+B_lamda_out = planck_law_lamda_um(lamda_um, T_out)
 Rad_lamda_out = radiance_lamda(B_lamda_out)
 
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 axes[0,0].plot(v, Rad_freq_in, label=f'Incoming T={5770} K')
 axes[0,0].plot(v, Rad_freq_out, label=f'Outgoing T={255} K')
 axes[0,0].set_xlabel('Frequency (Hz)')
-axes[0,0].set_ylabel('Spectral Radiance (W·sr⁻¹·m⁻²·Hz⁻¹)')
+axes[0,0].set_ylabel('Spectral Radiance (W·m⁻²·Hz⁻¹)')
 axes[0,0].set_title('Linear scale - Frequency Domain')
 axes[0,0].legend()
 
-axes[0,1].plot(lamda*1e9, Rad_lamda_in, label=f'Incoming T={5770} K')
-axes[0,1].plot(lamda*1e9, Rad_lamda_out, label=f'Outgoing T={255} K')
-axes[0,1].set_xlabel('Wavelength (nm)')
-axes[0,1].set_ylabel('Spectral Radiance (W·sr⁻¹·m⁻²·m⁻¹)')
+axes[0,1].plot(lamda_um, Rad_lamda_in, label=f'Incoming T={5770} K')
+axes[0,1].plot(lamda_um, Rad_lamda_out, label=f'Outgoing T={255} K')
+axes[0,1].set_xlabel('Wavelength (um)')
+axes[0,1].set_ylabel('Spectral Radiance (W·m⁻²·um⁻¹)')
 axes[0,1].set_title('Linear scale - Wavelength Domain')
 axes[0,1].legend()
 
 axes[1,0].loglog(v, B_freq_in, label=f'Incoming T={5770} K')
 axes[1,0].loglog(v, B_freq_out, label=f'Outgoing T={255} K')
 axes[1,0].set_xlabel('Frequency (Hz)')
-axes[1,0].set_ylabel('Spectral Radiance (W·sr⁻¹·m⁻²·Hz⁻¹)')
+axes[1,0].set_ylabel('Spectral Radiance (W·m⁻²·Hz⁻¹)')
 axes[1,0].set_title('Log-Log scale - Frequency Domain')
 axes[1,0].legend()
 
-axes[1,1].loglog(lamda*1e9, B_lamda_in, label=f'Incoming T={5770} K')
-axes[1,1].loglog(lamda*1e9, B_lamda_out, label=f'Outgoing T={255} K')
-axes[1,1].set_xlabel('Wavelength (nm)')
-axes[1,1].set_ylabel('Spectral Radiance (W·sr⁻¹·m⁻²·m⁻¹)')
+axes[1,1].loglog(lamda_um, B_lamda_in, label=f'Incoming T={5770} K')
+axes[1,1].loglog(lamda_um, B_lamda_out, label=f'Outgoing T={255} K')
+axes[1,1].set_xlabel('Wavelength (um)')
+axes[1,1].set_ylabel('Spectral Radiance (W·m⁻²·um⁻¹)')
 axes[1,1].set_title('Log-Log scale - Wavelength Domain')
 axes[1,1].legend()
 
