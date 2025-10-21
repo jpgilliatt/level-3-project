@@ -45,11 +45,11 @@ plt.show()
 
 
 E490Spectrum = pd.read_csv('E490SolarSpectrum.txt',delim_whitespace=True, header=None, names=['Wavelength_micro_m', 'Irradiance_W_m2_micro_m'])
-E490Spectrum_lamda = E490Spectrum['Wavelength_micro_m'] * 1e-6
-E490Spectrum_v = c / E490Spectrum_lamda
+E490Spectrum_lamda = E490Spectrum['Wavelength_micro_m']
+E490Spectrum_v = c / (E490Spectrum_lamda*1e-6)
+E490Spectrum_Irradiance = E490Spectrum['Irradiance_W_m2_micro_m']
 
-
-
+print(E490Spectrum)
 
 def planck_law_freq(frequency, temperature):
     """Calculate the spectral radiance of a black body at a given temperature."""
@@ -95,6 +95,7 @@ Rad_lamda_out = radiance_lamda(B_lamda_out)
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 axes[0,0].plot(v, Rad_freq_in, label=f'Incoming T={5770} K')
 axes[0,0].plot(v, Rad_freq_out, label=f'Outgoing T={255} K')
+axes[0,0].plot(E490Spectrum_v, E490Spectrum_Irradiance, label='E490 Solar Spectrum', color='green', alpha=0.5)
 axes[0,0].set_xlabel('Frequency (Hz)')
 axes[0,0].set_ylabel('Spectral Radiance (W·m⁻²·Hz⁻¹)')
 axes[0,0].set_title('Linear scale - Frequency Domain')
@@ -102,6 +103,7 @@ axes[0,0].legend()
 
 axes[0,1].plot(lamda_um, Rad_lamda_in, label=f'Incoming T={5770} K')
 axes[0,1].plot(lamda_um, Rad_lamda_out, label=f'Outgoing T={255} K')
+axes[0,1].plot(E490Spectrum_lamda, E490Spectrum_Irradiance, label='E490 Solar Spectrum', color='green', alpha=0.5)
 axes[0,1].set_xlabel('Wavelength (um)')
 axes[0,1].set_ylabel('Spectral Radiance (W·m⁻²·um⁻¹)')
 axes[0,1].set_title('Linear scale - Wavelength Domain')
@@ -109,6 +111,7 @@ axes[0,1].legend()
 
 axes[1,0].loglog(v, B_freq_in, label=f'Incoming T={5770} K')
 axes[1,0].loglog(v, B_freq_out, label=f'Outgoing T={255} K')
+axes[1,0].loglog(E490Spectrum_v, E490Spectrum_Irradiance, label='E490 Solar Spectrum', color='green', alpha=0.5)
 axes[1,0].set_xlabel('Frequency (Hz)')
 axes[1,0].set_ylabel('Spectral Radiance (W·m⁻²·Hz⁻¹)')
 axes[1,0].set_title('Log-Log scale - Frequency Domain')
@@ -116,6 +119,7 @@ axes[1,0].legend()
 
 axes[1,1].loglog(lamda_um, B_lamda_in, label=f'Incoming T={5770} K')
 axes[1,1].loglog(lamda_um, B_lamda_out, label=f'Outgoing T={255} K')
+axes[1,1].loglog(E490Spectrum_lamda, E490Spectrum_Irradiance, label='E490 Solar Spectrum', color='green', alpha=0.5)
 axes[1,1].set_xlabel('Wavelength (um)')
 axes[1,1].set_ylabel('Spectral Radiance (W·m⁻²·um⁻¹)')
 axes[1,1].set_title('Log-Log scale - Wavelength Domain')
