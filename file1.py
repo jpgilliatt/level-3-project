@@ -49,7 +49,16 @@ E490Spectrum_lamda = E490Spectrum['Wavelength_micro_m']
 E490Spectrum_v = c / (E490Spectrum_lamda*1e-6)
 E490Spectrum_Irradiance = E490Spectrum['Irradiance_W_m2_micro_m']
 
-print(E490Spectrum)
+plt.plot(E490Spectrum_lamda, E490Spectrum_Irradiance)
+plt.show()
+
+
+
+####################################################
+####################################################
+
+
+
 
 def planck_law_freq(frequency, temperature):
     """Calculate the spectral radiance of a black body at a given temperature."""
@@ -64,21 +73,24 @@ def planck_law_lamda_um(wavelength_um, temperature):
     return (2 * h * c**2) / (wavelength_m**5 * (np.exp(exponent) - 1)) * 1e-6  # Convert to per micrometer
 
 
+
+
 def radiance_freq(B_freq):
     """Convert spectral iradiance to radiance in frequency domain."""
     return np.pi * (6.96e8/1.5e11)**2 * B_freq
 
 def radiance_lamda(B_lamda):
     """Convert spectral iradiance to radiance in wavelength domain."""
-    return np.pi * B_lamda
+    return B_lamda * 6.79e-5
 
-
+test = planck_law_lamda_um(0.5, 5770)
+print(radiance_lamda(test))
 
 T_in = np.full(100000, 5770)
 T_out = np.full(100000, 255)
 
 v = np.linspace(1e14, 1e15, 100000)
-lamda_um = np.linspace(0.1, 3, 100000)
+lamda_um = np.linspace(0.2, 3, 100000)
 
 B_freq_in = planck_law_freq(v, T_in)
 Rad_freq_in = radiance_freq(B_freq_in)
@@ -91,6 +103,8 @@ Rad_lamda_in = radiance_lamda(B_lamda_in)
 
 B_lamda_out = planck_law_lamda_um(lamda_um, T_out)
 Rad_lamda_out = radiance_lamda(B_lamda_out)
+
+print(Rad_lamda_out)
 
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 axes[0,0].plot(v, Rad_freq_in, label=f'Incoming T={5770} K')
