@@ -50,6 +50,7 @@ HITRan_data.columns= ['Wavenumber', 'Intensity', 'gamma_air']
 
 ###############################################
 ###############################################
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -78,7 +79,7 @@ def spectral_lambda_to_freq(E_lambda, wavelength_um):
     return E_lambda * wavelength_m**2 / c
 
 # Wavelength range (µm)
-lamda_um = np.linspace(0.2, 50, 100000)
+lamda_um = np.linspace(0.2, 500, 100000)
 freq = c / (lamda_um * 1e-6)
 
 # Temperatures
@@ -200,3 +201,5 @@ def flux_difference(T):
 T_earth_balanced = fsolve(flux_difference, 255)[0]
 
 print(f"Earth surface temperature (no atmosphere): {T_earth_balanced:.2f} K")
+
+##########################
