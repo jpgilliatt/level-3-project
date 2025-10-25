@@ -41,136 +41,108 @@ plt.legend()
 plt.show()
 
 ####################################################
-####################################################
 
-
-E490Spectrum = pd.read_csv('E490SolarSpectrum.txt',delim_whitespace=True, header=None, names=['Wavelength_micro_m', 'Irradiance_W_m2_micro_m'])
-E490Spectrum_lamda = E490Spectrum['Wavelength_micro_m']
-E490Spectrum_irradiance_v = (E490Spectrum_lamda * (E490Spectrum_lamda*10e-6)**2) / (3e8)
-E490Spectrum_frequencyValues= 3e8 / E490Spectrum_lamda 
-E490Spectrum_Irradiance = E490Spectrum['Irradiance_W_m2_micro_m']
-
-plt.plot(E490Spectrum_frequencyValues, E490Spectrum_irradiance_v)
-plt.show()
-
-
-
-####################################################
-####################################################
-
-
-
-
-def planck_law_freq(frequency, temperature):
-    """Calculate the spectral radiance of a black body at a given temperature."""
-    exponent = (h * frequency) / (k * temperature)
-    return (2 * h * frequency**3) / (c**2 * (np.exp(exponent) - 1))
-
-
-def planck_law_lamda_um(wavelength_um, temperature):
-    """Calculate the spectral radiance of a black body at a given temperature."""
-    wavelength_m = wavelength_um * 1e-6
-    exponent = (h * c) / (wavelength_m * k * temperature)
-    return (2 * h * c**2) / (wavelength_m**5 * (np.exp(exponent) - 1)) * 1e-6  # Convert to per micrometer
-
-
-
-
-#def radiance_freq(B_freq):
-    """Convert spectral iradiance to radiance in frequency domain."""
-    R_sun = 6.96e8  # Sun radius in meters
-    AU = 1.5e11     # Astronomical Unit in meters
-    return B_freq * (np.pi * (R_sun / AU)**2)
-
-
-
-
-def radiance_lamda(B_lamda):
-    """Convert spectral iradiance to radiance in wavelength domain."""
-    return B_lamda * 6.79e-5 # Conversion factor from irradiance to radiance for Sun-Earth distance
-
-def radiance_freq(radiance_lamda, lamda):
-    return radiance_lamda * ((lamda*10e-6)**2)/(c)
-
-
-T_in = np.full(100000, 5770)
-T_out = np.full(100000, 255)
-
-#v = np.linspace(1e14, 1.5e15, 100000)
-lamda_um = np.linspace(0.2, 3, 100000)
-v= c / (lamda_um * 1e-6)
-
-
-
-#B_freq_in = planck_law_freq(v, T_in)
-#Rad_freq_in = radiance_freq(B_freq_in)
-
-#B_freq_out = planck_law_freq(v, T_out)
-#Rad_freq_out = radiance_freq(B_freq_out)
-
-B_lamda_in = planck_law_lamda_um(lamda_um, T_in)
-Rad_lamda_in = radiance_lamda(B_lamda_in)
-Rad_freq_in= radiance_freq(Rad_lamda_in, lamda_um)
-
-
-B_lamda_out = planck_law_lamda_um(lamda_um, T_out)
-Rad_lamda_out = radiance_lamda(B_lamda_out)
-Rad_freq_out= radiance_freq(Rad_lamda_out, lamda_um)
-
-
-print(Rad_lamda_out)
-
-fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-axes[0,0].plot(v, Rad_freq_in, label=f'Incoming T={5770} K')
-#axes[0,0].plot(v, Rad_freq_out, label=f'Outgoing T={255} K')
-axes[0,0].plot(E490Spectrum_irradiance_v, E490Spectrum_Irradiance, label='E490 Solar Spectrum', color='green', alpha=0.5)
-axes[0,0].set_xlabel('Frequency (Hz)')
-axes[0,0].set_ylabel('Spectral Radiance (W·m⁻²·Hz⁻¹)')
-axes[0,0].set_title('Linear scale - Frequency Domain')
-axes[0,0].legend()
-
-axes[0,1].plot(lamda_um, Rad_lamda_in, label=f'Incoming T={5770} K')
-#axes[0,1].plot(lamda_um, Rad_lamda_out, label=f'Outgoing T={255} K')
-axes[0,1].plot(E490Spectrum_lamda, E490Spectrum_Irradiance, label='E490 Solar Spectrum', color='green', alpha=0.5)
-axes[0,1].set_xlabel('Wavelength (um)')
-axes[0,1].set_ylabel('Spectral Radiance (W·m⁻²·um⁻¹)')
-axes[0,1].set_title('Linear scale - Wavelength Domain')
-axes[0,1].legend()
-
-axes[1,0].loglog(v, B_freq_in, label=f'Incoming T={5770} K')
-#axes[1,0].loglog(v, B_freq_out, label=f'Outgoing T={255} K')
-axes[1,0].loglog(E490Spectrum_irradiance_v, E490Spectrum_Irradiance, label='E490 Solar Spectrum', color='green', alpha=0.5)
-axes[1,0].set_xlabel('Frequency (Hz)')
-axes[1,0].set_ylabel('Spectral Radiance (W·m⁻²·Hz⁻¹)')
-axes[1,0].set_title('Log-Log scale - Frequency Domain')
-axes[1,0].legend()
-
-axes[1,1].loglog(lamda_um, Rad_lamda_in, label=f'Incoming T={5770} K')
-#axes[1,1].loglog(lamda_um, B_lamda_out, label=f'Outgoing T={255} K')
-axes[1,1].loglog(E490Spectrum_lamda, E490Spectrum_Irradiance, label='E490 Solar Spectrum', color='green', alpha=0.5)
-axes[1,1].set_xlabel('Wavelength (um)')
-axes[1,1].set_ylabel('Spectral Radiance (W·m⁻²·um⁻¹)')
-axes[1,1].set_title('Log-Log scale - Wavelength Domain')
-axes[1,1].legend()
-
-plt.tight_layout()
-plt.show()
-
-
-plt.plot(lamda_um, Rad_lamda_in, label=f'Incoming T={5770} K')
-plt.show()
-
-####################################################
-####################################################
 
 
 HITRan_data = pd.read_csv('68f37e77.txt',usecols=[0,1,2], header=0)
 HITRan_data.columns= ['Wavenumber', 'Intensity', 'gamma_air']
 
 
+###############################################
+###############################################
 
+import numpy as np
+import matplotlib.pyplot as plt
 
+# Constants
+h = 6.626e-34  # Planck constant (J·s)
+c = 3e8        # Speed of light (m/s)
+k = 1.38e-23   # Boltzmann constant (J/K)
 
+# Planck's law (per wavelength in µm)
+def planck_law_lambda_um(wavelength_um, T):
+    wavelength_m = wavelength_um * 1e-6
+    exponent = (h * c) / (wavelength_m * k * T)
+    B = (2 * h * c**2) / (wavelength_m**5 * (np.exp(exponent) - 1))
+    return B * 1e-6  # Convert from per m to per µm
 
+# Scale from Sun surface → Earth orbit
+R_sun = 6.96e8  # m
+AU = 1.496e11   # m
+scale_sun_to_earth = np.pi * (R_sun / AU)**2  # ≈ 6.82×10⁻⁵
 
+# Convert spectral irradiance per λ to per ν
+def spectral_lambda_to_freq(E_lambda, wavelength_um):
+    wavelength_m = wavelength_um * 1e-6
+    return E_lambda * wavelength_m**2 / c
 
+# Wavelength range (µm)
+lamda_um = np.linspace(0.2, 3, 100000)
+freq = c / (lamda_um * 1e-6)
+
+# Temperatures
+T_sun = 5770
+T_earth = 255
+
+# Incoming (Sun → Earth)
+E_lambda_in = planck_law_lambda_um(lamda_um, T_sun) * scale_sun_to_earth
+E_freq_in = spectral_lambda_to_freq(E_lambda_in, lamda_um)
+
+# Outgoing (Earth emission)
+E_lambda_out = planck_law_lambda_um(lamda_um, T_earth)
+E_freq_out = spectral_lambda_to_freq(E_lambda_out, lamda_um)
+
+# load your E490 data here once ready
+E490Spectrum = pd.read_csv('E490SolarSpectrum.txt',delim_whitespace=True, header=None, names=['Wavelength_micro_m', 'Irradiance_W_m2_micro_m'])
+E490Spectrum_lamda = E490Spectrum['Wavelength_micro_m']
+E490Spectrum_Irradiance = E490Spectrum['Irradiance_W_m2_micro_m']
+E490Spectrum_freq = c / (E490Spectrum_lamda * 1e-6)
+E490Spectrum_Irradiance_freq = spectral_lambda_to_freq(E490Spectrum_Irradiance, E490Spectrum_lamda)
+
+# Integrate (area under curves)
+A_in = np.trapz(E_lambda_in, lamda_um * 1e-6)
+A_out = np.trapz(E_lambda_out, lamda_um * 1e-6)
+print(f"Incoming (Planck, 5770 K): {A_in:.2f} W/m²")
+print(f"Outgoing (Planck, 255 K): {A_out:.2f} W/m²")
+
+# Plotting
+fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+
+# Linear - Frequency
+axes[0, 0].plot(freq, E_freq_in, label='Incoming (5770 K)')
+axes[0, 0].plot(freq, E_freq_out, label='Outgoing (255 K)')
+axes[0,0].plot(E490Spectrum_freq, E490Spectrum_Irradiance_freq, label='E490 Solar Spectrum', color='green', alpha=0.5)
+axes[0, 0].set_xlabel('Frequency (Hz)')
+axes[0, 0].set_ylabel('Spectral Irradiance (W m⁻² Hz⁻¹)')
+axes[0, 0].set_title('Linear scale — Frequency domain')
+axes[0, 0].legend()
+
+# Linear - Wavelength
+axes[0, 1].plot(lamda_um, E_lambda_in, label='Incoming (5770 K)')
+axes[0, 1].plot(lamda_um, E_lambda_out, label='Outgoing (255 K)')
+axes[0,1].plot(E490Spectrum_lamda, E490Spectrum_Irradiance, label='E490 Solar Spectrum', color='green', alpha=0.5)
+axes[0, 1].set_xlabel('Wavelength (µm)')
+axes[0, 1].set_ylabel('Spectral Irradiance (W m⁻² µm⁻¹)')
+axes[0, 1].set_title('Linear scale — Wavelength domain')
+axes[0, 1].legend()
+
+# Log–log - Frequency
+axes[1, 0].loglog(freq, E_freq_in, label='Incoming (5770 K)')
+axes[1, 0].loglog(freq, E_freq_out, label='Outgoing (255 K)')
+axes[1,0].loglog(E490Spectrum_freq, E490Spectrum_Irradiance_freq, label='E490 Solar Spectrum', color='green', alpha=0.5)
+axes[1, 0].set_xlabel('Frequency (Hz)')
+axes[1, 0].set_ylabel('Spectral Irradiance (W m⁻² Hz⁻¹)')
+axes[1, 0].set_title('Log–log scale — Frequency domain')
+axes[1, 0].legend()
+
+# Log–log - Wavelength
+axes[1, 1].loglog(lamda_um, E_lambda_in, label='Incoming (5770 K)')
+axes[1, 1].loglog(lamda_um, E_lambda_out, label='Outgoing (255 K)')
+axes[1,1].loglog(E490Spectrum_lamda, E490Spectrum_Irradiance, label='E490 Solar Spectrum', color='green', alpha=0.5)
+axes[1, 1].set_xlabel('Wavelength (µm)')
+axes[1, 1].set_ylabel('Spectral Irradiance (W m⁻² µm⁻¹)')
+axes[1, 1].set_title('Log–log scale — Wavelength domain')
+axes[1, 1].legend()
+
+plt.tight_layout()
+plt.show()
