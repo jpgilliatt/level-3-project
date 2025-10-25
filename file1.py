@@ -55,6 +55,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import integrate
+from scipy.optimize import fsolve
 
 # Constants
 h = 6.626e-34  # Planck constant (J·s)
@@ -120,7 +121,28 @@ Leftside = (1 - albedo) * A_in
 
 Outgoing_flux = Leftside/(4 * np.pi)
 
-T_earth_balanced = (Outgoing_flux/5.67e-8)**0.25
+def total_flux(T, lamda_m):
+    """
+    Compute the total emitted flux for a blackbody at temperature T
+    by integrating Planck's law over wavelength.
+    
+    lamda_m : array of wavelengths in meters
+    """
+    B_lambda = 2*h*c**2 / (lamda_m**5 * (np.exp(h*c / (lamda_m*k*T)) - 1))
+    F_total = integrate.simpson(B_lambda, lamda_m)
+    return F_total
+
+# Suppose you have the absorbed solar flux already
+F_absorbed = (1 - albedo) * Outgoing_flux  # W/m²
+
+# Define function whose root gives the correct Earth temperature
+def flux_difference(T):
+    return total_flux(T, lamda_um) - F_absorbed
+
+# Initial guess for T (K)
+T_guess = 255
+T_earth_balanced = fsolve(flux_difference, T_guess)[0]
+
 print(f"Earth surface temperature (no atmosphere): {T_earth_balanced:.2f} K")
 
 # Integrate in frequency (reverse arrays because freq decreases with wavelength)
