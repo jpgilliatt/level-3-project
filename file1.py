@@ -79,7 +79,7 @@ def spectral_lambda_to_freq(E_lambda, wavelength_um):
     return E_lambda * wavelength_m**2 / c
 
 # Wavelength range (µm)
-lamda_um = np.linspace(0.2, 500, 100000)
+lamda_um = np.linspace(0.1 500, 100000)
 freq = c / (lamda_um * 1e-6)
 
 # Temperatures
@@ -107,10 +107,26 @@ A_in = integrate.simpson(E_lambda_in, lamda_um)
 A_out = integrate.simpson(E_lambda_out, lamda_um)
 A_E490 = integrate.simpson(E490Spectrum_Irradiance, E490Spectrum_lamda)
 
+#solving for earth surface temperature without atmosphere
+# Energy balance (no atmosphere):
+# (1 - albedo) * ∫ I_nu_sun dν  =  4 * π * ∫ B_nu_earth(T) dν
+# where:
+#   I_nu_sun : spectral irradiance of the Sun at Earth (W/m²/Hz)
+#   B_nu_earth(T) : Planck spectral radiance of Earth at temperature T (W/m²/sr/Hz)
+#   albedo : fraction of sunlight reflected by Earth
+
+albedo = 0.296
+Leftside = (1 - albedo) * A_in
+
+Outgoing_flux = Leftside/(4 * np.pi)
+
+T_earth_balanced = (Outgoing_flux/5.67e-8)**0.25
+print(f"Earth surface temperature (no atmosphere): {T_earth_balanced:.2f} K")
+
 # Integrate in frequency (reverse arrays because freq decreases with wavelength)
-A_in_freq = integrate.simpson(E_freq_in[::-1], freq[::-1])
-A_out_freq = integrate.simpson(E_freq_out[::-1], freq[::-1])
-A_E490_freq = integrate.simpson(E490Spectrum_Irradiance_freq[::-1], E490Spectrum_freq[::-1])
+#A_in_freq = integrate.simpson(E_freq_in[::-1], freq[::-1])
+#A_out_freq = integrate.simpson(E_freq_out[::-1], freq[::-1])
+#A_E490_freq = integrate.simpson(E490Spectrum_Irradiance_freq[::-1], E490Spectrum_freq[::-1])
 
 print(f"Incoming (Planck, 5770 K): {A_in:.2f} W/m²")
 print(f"Outgoing (Planck, 255 K): {A_out:.2f} W/m²")
@@ -180,26 +196,5 @@ axes[1, 1].legend()
 plt.tight_layout()
 plt.show()
 
-
-# Calculate Earth's surface temperature without atmosphere
-from scipy.optimize import fsolve
-
-albedo = 0.296
-
-# Incoming absorbed flux
-F_absorbed = (1 - albedo) * integrate.simpson(E_lambda_in, lamda_um)
-
-# Wavelength array for Earth emission
-lamda_um_out = np.linspace(0.2, 50, 200000)
-
-def flux_difference(T):
-    E_lambda_out = planck_law_lambda_um(lamda_um_out, T)
-    F_out = integrate.simpson(E_lambda_out, lamda_um_out)
-    return F_out - F_absorbed
-
-# Solve for Earth's temperature
-T_earth_balanced = fsolve(flux_difference, 255)[0]
-
-print(f"Earth surface temperature (no atmosphere): {T_earth_balanced:.2f} K")
-
 ##########################
+
