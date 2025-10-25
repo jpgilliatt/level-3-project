@@ -78,7 +78,7 @@ def spectral_lambda_to_freq(E_lambda, wavelength_um):
     return E_lambda * wavelength_m**2 / c
 
 # Wavelength range (µm)
-lamda_um = np.linspace(0.2, 3, 100000)
+lamda_um = np.linspace(0.2, 50, 100000)
 freq = c / (lamda_um * 1e-6)
 
 # Temperatures
@@ -179,3 +179,24 @@ axes[1, 1].legend()
 plt.tight_layout()
 plt.show()
 
+
+# Calculate Earth's surface temperature without atmosphere
+from scipy.optimize import fsolve
+
+albedo = 0.296
+
+# Incoming absorbed flux
+F_absorbed = (1 - albedo) * integrate.simpson(E_lambda_in, lamda_um)
+
+# Wavelength array for Earth emission
+lamda_um_out = np.linspace(0.2, 50, 200000)
+
+def flux_difference(T):
+    E_lambda_out = planck_law_lambda_um(lamda_um_out, T)
+    F_out = integrate.simpson(E_lambda_out, lamda_um_out)
+    return F_out - F_absorbed
+
+# Solve for Earth's temperature
+T_earth_balanced = fsolve(flux_difference, 255)[0]
+
+print(f"Earth surface temperature (no atmosphere): {T_earth_balanced:.2f} K")
