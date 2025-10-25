@@ -80,7 +80,7 @@ def spectral_lambda_to_freq(E_lambda, wavelength_um):
     return E_lambda * wavelength_m**2 / c
 
 # Wavelength range (µm)
-lamda_um = np.linspace(0.1 500, 100000)
+lamda_um = np.linspace(0.1, 500, 100000)
 freq = c / (lamda_um * 1e-6)
 
 # Temperatures
@@ -121,29 +121,29 @@ Leftside = (1 - albedo) * A_in
 
 Outgoing_flux = Leftside/(4 * np.pi)
 
-def total_flux(T, lamda_m):
-    """
-    Compute the total emitted flux for a blackbody at temperature T
-    by integrating Planck's law over wavelength.
-    
-    lamda_m : array of wavelengths in meters
-    """
-    B_lambda = 2*h*c**2 / (lamda_m**5 * (np.exp(h*c / (lamda_m*k*T)) - 1))
-    F_total = integrate.simpson(B_lambda, lamda_m)
-    return F_total
+#def total_flux(T, lamda_m):
+#    """
+#    Compute the total emitted flux for a blackbody at temperature T
+#    by integrating Planck's law over wavelength.
+#    
+#    lamda_m : array of wavelengths in meters
+#    """
+#    B_lambda = 2*h*c**2 / (lamda_m**5 * (np.exp(h*c / (lamda_m*k*T)) - 1))
+#    F_total = integrate.simpson(B_lambda, lamda_m)
+#    return F_total
 
 # Suppose you have the absorbed solar flux already
-F_absorbed = (1 - albedo) * Outgoing_flux  # W/m²
+#F_absorbed = (1 - albedo) * Outgoing_flux  # W/m²
 
 # Define function whose root gives the correct Earth temperature
-def flux_difference(T):
-    return total_flux(T, lamda_um) - F_absorbed
+#def flux_difference(T):
+#    return total_flux(T, lamda_um) - F_absorbed
 
 # Initial guess for T (K)
-T_guess = 255
-T_earth_balanced = fsolve(flux_difference, T_guess)[0]
+#T_guess = 255
+#T_earth_balanced = fsolve(flux_difference, T_guess)[0]
 
-print(f"Earth surface temperature (no atmosphere): {T_earth_balanced:.2f} K")
+#print(f"Earth surface temperature (no atmosphere): {T_earth_balanced:.2f} K")
 
 # Integrate in frequency (reverse arrays because freq decreases with wavelength)
 #A_in_freq = integrate.simpson(E_freq_in[::-1], freq[::-1])
