@@ -191,6 +191,8 @@ HITRan_data['Wavenumber'] = pd.to_numeric(HITRan_data['Wavenumber'], errors='coe
 HITRan_data['Intensity'] = pd.to_numeric(HITRan_data['Intensity'], errors='coerce')
 HITRan_data['gamma_air'] = pd.to_numeric(HITRan_data['gamma_air'], errors='coerce')
 
+
+
 plt.figure(figsize=(10, 6))
 
 plt.plot(HITRan_data['Wavenumber'], HITRan_data['Intensity'])
@@ -213,21 +215,25 @@ plt.title('CO2 Absorption Stick Spectrum from HITRAN')
 plt.grid()
 plt.show()
 
-###########################
-###########################
 
-nu_min=filtered_data['Wavenumber'].min()-1
-nu_max=filtered_data['Wavenumber'].max()+1
-nu_points=np.linspace(nu_min, nu_max,1000)
+############################
+############################
 
-def lorentzian(nu, nu_0, gamma,S):
-    return (S/np.pi) * (gamma / ((nu - nu_0)**2 + gamma**2))
+import os
+print(os.getcwd())
 
-sigma_total = np.zeros_like(nu_points)
+nu_min = filtered_data['Wavenumber'].min() - 1
+nu_max = filtered_data['Wavenumber'].max() + 1
+nu = np.linspace(nu_min, nu_max, 1000)
+
+def lorentzian(nu, nu_0, gamma, S):
+    return (S / np.pi) * (gamma / ((nu - nu_0)**2 + gamma**2))
+
+sigma_total = np.zeros_like(nu)
 
 plt.figure(figsize=(10, 6))
-plt.plot(nu,sigma_total, label='Total Absorption Cross-Section', color='black')
+plt.plot(nu, sigma_total, label='Total Absorption Spectrum', color='black')
 plt.xlabel('Wavenumber (cm⁻¹)')
 plt.ylabel('Absorption Cross-Section (cm²)')
-plt.title('CO2 Absorption Cross-Section from HITRAN Data')
+plt.title('CO2 Absorption Spectrum from HITRAN Data')
 plt.show()
