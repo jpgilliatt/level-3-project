@@ -183,8 +183,6 @@ plt.show()
 ##########################
 
 
-
-
 HITRan_data = pd.read_csv('68ffa2cd.txt',usecols=[0,1,2], header=0)
 HITRan_data.columns= ['Wavenumber', 'Intensity', 'gamma_air']
 print(HITRan_data.head(6))
@@ -192,11 +190,50 @@ print(HITRan_data.head(6))
 HITRan_data['Wavenumber'] = pd.to_numeric(HITRan_data['Wavenumber'], errors='coerce')
 HITRan_data['Intensity'] = pd.to_numeric(HITRan_data['Intensity'], errors='coerce')
 
+
+
 plt.figure(figsize=(10, 6))
 
 plt.plot(HITRan_data['Wavenumber'], HITRan_data['Intensity'])
+plt.xlim(550,770)
 plt.xlabel('Wavenumber (cm⁻¹)')
 plt.ylabel('Intensity')
 plt.title('CO2 Absorption Stick Spectrum from HITRAN')
 plt.grid()
 plt.show()
+
+filtered_data = HITRan_data[(HITRan_data['Wavenumber'] >= 550) & (HITRan_data['Wavenumber'] <= 770)]
+
+# Plot using stem
+plt.figure(figsize=(10, 6))
+plt.stem(filtered_data['Wavenumber'], filtered_data['Intensity'], linefmt='C0-', markerfmt=' ', basefmt=' ')
+plt.xlim(600, 725)
+plt.xlabel('Wavenumber (cm⁻¹)')
+plt.ylabel('Intensity')
+plt.title('CO2 Absorption Stick Spectrum from HITRAN')
+plt.grid()
+plt.show()
+
+
+
+from scipy import constants
+
+def lorentzian(x, x0, gamma):
+    return (gamma/np.pi) / ((x - x0)**2 + gamma**2)
+
+gamma = 0.1
+
+x=np.linspace(600, 725, 100000)
+
+spectrum = np.zeros_like(x)
+
+for wn in filtered_data['Wavenumber']:
+    spectrum += lorentzian(x, wn, gamma)
+
+plt.figure(figsize=(10, 6))
+plt.plot(x, spectrum, label='Lorentzian-broadened CO2 Spectrum')
+plt.xlabel('Wavenumber (cm⁻¹)')
+plt.ylabel('Absorption Intensity (arbitrary units)')
+plt.title('Lorentzian-broadened CO2 Absorption Spectrum')
+plt.show()
+
