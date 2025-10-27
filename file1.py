@@ -41,13 +41,6 @@ plt.legend()
 plt.show()
 
 ####################################################
-
-
-
-HITRan_data = pd.read_csv('68f37e77.txt',usecols=[0,1,2], header=0)
-HITRan_data.columns= ['Wavenumber', 'Intensity', 'gamma_air']
-
-
 ###############################################
 ###############################################
 
@@ -85,7 +78,7 @@ freq = c / (lamda_um * 1e-6)
 
 # Temperatures
 T_sun = 5770
-T_earth = 254
+T_earth = 254.9
 
 # Incoming (Sun → Earth)
 E_lambda_in = planck_law_lambda_um(lamda_um, T_sun) * scale_sun_to_earth
@@ -130,31 +123,24 @@ fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 
 # Linear - Frequency
 axes[0, 0].plot(freq, E_freq_in, label='Incoming (5770 K)')
-axes[0, 0].plot(freq, E_freq_out, label='Outgoing (255 K)')
+axes[0, 0].plot(freq, E_freq_out, label='Outgoing (254.9 K)')
 axes[0, 0].plot(E490Spectrum_freq, E490Spectrum_Irradiance_freq,
                 label='E490 Solar Spectrum', color='green', alpha=0.5)
+axes[0, 0].set_xlim(1e13, 1.5e15)  # Set x-axis limits for better visibility
 axes[0, 0].set_xlabel('Frequency (Hz)')
 axes[0, 0].set_ylabel('Spectral Irradiance (W m⁻² Hz⁻¹)')
 axes[0, 0].set_title('Linear scale — Frequency domain')
-axes[0, 0].text(
-    0.05, 0.85,
-    f"∫ Incoming: {A_in_freq:.1f} W/m²\n"
-    f"∫ Outgoing: {A_out_freq:.1f} W/m²\n"
-    f"∫ E490: {A_E490_freq:.1f} W/m²",
-    transform=axes[0, 0].transAxes,
-    fontsize=10,
-    bbox=dict(facecolor='white', alpha=0.8, edgecolor='none')
-)
 axes[0, 0].legend()
 
 # Linear - Wavelength
 axes[0, 1].plot(lamda_um, E_lambda_in, label='Incoming (5770 K)')
-axes[0, 1].plot(lamda_um, E_lambda_out, label='Outgoing (255 K)')
+axes[0, 1].plot(lamda_um, E_lambda_out, label='Outgoing (254.9 K)')
 axes[0, 1].plot(E490Spectrum_lamda, E490Spectrum_Irradiance,
                 label='E490 Solar Spectrum', color='green', alpha=0.5)
 axes[0, 1].set_xlabel('Wavelength (µm)')
 axes[0, 1].set_ylabel('Spectral Irradiance (W m⁻² µm⁻¹)')
 axes[0, 1].set_title('Linear scale — Wavelength domain')
+axes[0,1].set_xlim(0, 3)  # Zoom in for better visibility
 axes[0, 1].text(
     0.05, 0.85,
     f"∫ Incoming: {A_in:.1f} W/m²\n"
@@ -168,9 +154,10 @@ axes[0, 1].legend()
 
 # Log–log - Frequency
 axes[1, 0].loglog(freq, E_freq_in, label='Incoming (5770 K)')
-axes[1, 0].loglog(freq, E_freq_out, label='Outgoing (255 K)')
-axes[1, 0].loglog(E490Spectrum_freq, E490Spectrum_Irradiance_freq,
-                  label='E490 Solar Spectrum', color='green', alpha=0.5)
+axes[1, 0].loglog(freq, E_freq_out, label='Outgoing (254.9 K)')
+#axes[1, 0].loglog(E490Spectrum_freq, E490Spectrum_Irradiance_freq,
+#                  label='E490 Solar Spectrum', color='green', alpha=0.5)
+axes[1, 0].set_ylim(1e-35, 1e-6)  # Set x-axis limits for better visibility
 axes[1, 0].set_xlabel('Frequency (Hz)')
 axes[1, 0].set_ylabel('Spectral Irradiance (W m⁻² Hz⁻¹)')
 axes[1, 0].set_title('Log–log scale — Frequency domain')
@@ -178,9 +165,11 @@ axes[1, 0].legend()
 
 # Log–log - Wavelength
 axes[1, 1].loglog(lamda_um, E_lambda_in, label='Incoming (5770 K)')
-axes[1, 1].loglog(lamda_um, E_lambda_out, label='Outgoing (255 K)')
-axes[1, 1].loglog(E490Spectrum_lamda, E490Spectrum_Irradiance,
-                  label='E490 Solar Spectrum', color='green', alpha=0.5)
+axes[1, 1].loglog(lamda_um, E_lambda_out, label='Outgoing (254.9 K)')
+#axes[1, 1].loglog(E490Spectrum_lamda, E490Spectrum_Irradiance,
+#                  label='E490 Solar Spectrum', color='green', alpha=0.5)
+axes[1, 1].set_xlim(0.1, 500)  # Set x-axis limits for better visibility
+axes[1, 1].set_ylim(1e-5, 1e4)
 axes[1, 1].set_xlabel('Wavelength (µm)')
 axes[1, 1].set_ylabel('Spectral Irradiance (W m⁻² µm⁻¹)')
 axes[1, 1].set_title('Log–log scale — Wavelength domain')
@@ -189,5 +178,25 @@ axes[1, 1].legend()
 plt.tight_layout()
 plt.show()
 
+
+##########################
 ##########################
 
+
+
+
+HITRan_data = pd.read_csv('68ffa2cd.txt',usecols=[0,1,2], header=0)
+HITRan_data.columns= ['Wavenumber', 'Intensity', 'gamma_air']
+print(HITRan_data.head(6))
+
+HITRan_data['Wavenumber'] = pd.to_numeric(HITRan_data['Wavenumber'], errors='coerce')
+HITRan_data['Intensity'] = pd.to_numeric(HITRan_data['Intensity'], errors='coerce')
+
+plt.figure(figsize=(10, 6))
+
+plt.plot(HITRan_data['Wavenumber'], HITRan_data['Intensity'])
+plt.xlabel('Wavenumber (cm⁻¹)')
+plt.ylabel('Intensity')
+plt.title('CO2 Absorption Stick Spectrum from HITRAN')
+plt.grid()
+plt.show()
