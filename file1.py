@@ -198,7 +198,7 @@ plt.figure(figsize=(10, 6))
 plt.plot(HITRan_data['Wavenumber'], HITRan_data['Intensity'])
 plt.xlim(550,770)
 plt.xlabel('Wavenumber (cm⁻¹)')
-plt.ylabel('Intensity')
+plt.ylabel('Intensity (cm⁻¹/(molecule·cm⁻²)')
 plt.title('CO2 Absorption Stick Spectrum from HITRAN')
 plt.grid()
 plt.show()
@@ -219,21 +219,21 @@ plt.show()
 ############################
 ############################
 
-import os
-print(os.getcwd())
+nu0 = HITRan_data['Wavenumber']
+S = HITRan_data['Intensity']
+gamma = HITRan_data['gamma_air']
 
-nu_min = filtered_data['Wavenumber'].min() - 1
-nu_max = filtered_data['Wavenumber'].max() + 1
-nu = np.linspace(nu_min, nu_max, 1000)
+nu=np.linespace(min(nu0)-5, max(nu0)+5, 1000)
 
-def lorentzian(nu, nu_0, gamma, S):
-    return (S / np.pi) * (gamma / ((nu - nu_0)**2 + gamma**2))
+alpha=np.zeros_like(nu)
 
-sigma_total = np.zeros_like(nu)
+for i in range(len(nu0)):
+    L = ((1/np.pi) * gamma[i]) / ((nu - nu0[i])**2 + gamma[i]**2)
+    alpha += S[i] * L
 
 plt.figure(figsize=(10, 6))
-plt.plot(nu, sigma_total, label='Total Absorption Spectrum', color='black')
-plt.xlabel('Wavenumber (cm⁻¹)')
-plt.ylabel('Absorption Cross-Section (cm²)')
-plt.title('CO2 Absorption Spectrum from HITRAN Data')
+plt.plot(nu, alpha, label='Absorption Spectrum')
 plt.show()
+
+
+
