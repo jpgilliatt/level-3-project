@@ -182,58 +182,62 @@ plt.show()
 ##########################
 ##########################
 
+# -----------------------------
+# Parameters
+# -----------------------------
+pressure_atm = 1.0  # pressure in atm, adjust as needed
 
-HITRan_data = pd.read_csv('68ffa2cd.txt',usecols=[0,1,2], header=0)
-HITRan_data.columns= ['Wavenumber', 'Intensity', 'gamma_air']
-print(HITRan_data.head(6))
+# -----------------------------
+# Load HITRAN data
+# -----------------------------
+HITRan_data = pd.read_csv('68ffa2cd.txt', usecols=[0,1,2], header=0)
+HITRan_data.columns = ['Wavenumber', 'Intensity', 'gamma_air']
 
+# Convert columns to numeric
 HITRan_data['Wavenumber'] = pd.to_numeric(HITRan_data['Wavenumber'], errors='coerce')
 HITRan_data['Intensity'] = pd.to_numeric(HITRan_data['Intensity'], errors='coerce')
 HITRan_data['gamma_air'] = pd.to_numeric(HITRan_data['gamma_air'], errors='coerce')
 
+# Filter data to desired wavenumber range
+filtered_data = HITRan_data[(HITRan_data['Wavenumber'] >= 550) & 
+                            (HITRan_data['Wavenumber'] <= 770)]
 
+# -----------------------------
+# Extract data
+# -----------------------------
+nu0 = filtered_data['Wavenumber'].values       # line centers (cm^-1)
+S = filtered_data['Intensity'].values          # line intensities (cm^-1/(molecule·cm^-2))
+gamma_air = filtered_data['gamma_air'].values  # air-broadened HWHM (cm^-1/atm)
 
-plt.figure(figsize=(10, 6))
+# Scale gamma by actual pressure
+gamma = gamma_air * pressure_atm
 
-plt.plot(HITRan_data['Wavenumber'], HITRan_data['Intensity'])
-plt.xlim(550,770)
-plt.xlabel('Wavenumber (cm⁻¹)')
-plt.ylabel('Intensity (cm⁻¹/(molecule·cm⁻²)')
-plt.title('CO2 Absorption Stick Spectrum from HITRAN')
-plt.grid()
-plt.show()
+# -----------------------------
+# Create fine wavenumber grid
+# -----------------------------
+nu = np.linspace(nu0.min() - 5, nu0.max() + 5, 1000)  # cm^-1
 
-filtered_data = HITRan_data[(HITRan_data['Wavenumber'] >= 550) & (HITRan_data['Wavenumber'] <= 770)]
-
-# Plot using stem
-plt.figure(figsize=(10, 6))
-plt.stem(filtered_data['Wavenumber'], filtered_data['Intensity'], linefmt='C0-', markerfmt=' ', basefmt=' ')
-plt.xlim(600, 725)
-plt.xlabel('Wavenumber (cm⁻¹)')
-plt.ylabel('Intensity')
-plt.title('CO2 Absorption Stick Spectrum from HITRAN')
-plt.grid()
-plt.show()
-
-
-############################
-############################
-
-nu0 = HITRan_data['Wavenumber']
-S = HITRan_data['Intensity']
-gamma = HITRan_data['gamma_air']
-
-nu=np.linespace(min(nu0)-5, max(nu0)+5, 1000)
-
-alpha=np.zeros_like(nu)
+# -----------------------------
+# Compute Lorentzian cross-section
+# -----------------------------
+sigma = np.zeros_like(nu)
 
 for i in range(len(nu0)):
-    L = ((1/np.pi) * gamma[i]) / ((nu - nu0[i])**2 + gamma[i]**2)
-    alpha += S[i] * L
+    L = (1/np.pi) * gamma[i] / ((nu - nu0[i])**2 + gamma[i]**2)  # Lorentzian HWHM
+    sigma += S[i] * L  # cross-section in cm^2/molecule
+
+# -----------------------------
+# Plotting
+# -----------------------------
 
 plt.figure(figsize=(10, 6))
-plt.plot(nu, alpha, label='Absorption Spectrum')
+plt.xlim(600, 740)
+plt.ylim(1e-22, 1e-17)
+plt.yscale('log')  # Correct function to set log scale
+plt.plot(nu, sigma, color='blue', lw=1.5, label='Lorentzian cross-section')
+plt.scatter(nu0, S, color='red', s=3, alpha=0.8)
+plt.xlabel('Wavenumber (cm⁻¹)')
+plt.ylabel('Absorption cross-section (cm²/molecule)', color='blue')
+plt.tick_params(axis='y', labelcolor='blue')
+
 plt.show()
-
-
-
