@@ -317,3 +317,83 @@ plt.ylabel('Absorption cross-section (cm²/molecule)', color='blue')
 plt.legend()
 plt.tick_params(axis='y', labelcolor='blue')
 plt.show()
+
+
+#####################################
+#####################################
+
+
+
+####################################################
+###############################################
+###############################################
+
+def planck_law_lambda_um(wavelength_um, T):
+    wavelength_m = wavelength_um * 1e-6
+    exponent = (h * c) / (wavelength_m * k * T)
+    B = (2 * h * c**2) / (wavelength_m**5 * (np.exp(exponent) - 1))
+    return B * 1e-6  # Convert from per m to per µm
+
+
+def optical_depth(NumberDensity, CrossSection, PathLength,CO2ppm):
+    """Calculate optical depth."""
+    return NumberDensity * CrossSection * PathLength * CO2ppm/350
+
+
+# Wavelength range (µm)
+lam_um = np.linspace(0.1, 50, 100000)
+
+lam_sigma_um = 1e4 / nu  # convert to µm
+
+sigma_interp = np.interp(lam_um, lam_sigma_um[::-1], sigma[::-1])
+
+z0= 8000
+CO2ppm = 400  # current CO2 concentration in ppm
+N0 = 1
+OD_lamda = optical_depth(N0, sigma_interp, z0, CO2ppm)
+
+def single_slab_radiative_transfer(OpticalDepth, Temp_surface, T_Trop, wavelength):
+    """Calculate outgoing spectral irradiance using single-slab radiative transfer."""
+    x = planck_law_lamda(wavelength, Temp_surface) * np.exp(-OpticalDepth)
+    y = planck_law_lamda(wavelength, T_Trop) * (1 - np.exp(-OpticalDepth))
+    return x + y
+
+
+T_surface = 288
+Gamma_LR = 0.00649       # K/m
+eta = 0.75
+T_trop = T_surface - Gamma_LR * z0 * np.log(1 - eta)
+
+I_out = single_slab_radiative_transfer(OD_lamda, T_surface, T_trop, lam_um)
+
+
+# Constants
+h = 6.626e-34  # Planck constant (J·s)
+c = 3e8        # Speed of light (m/s)
+k = 1.38e-23   # Boltzmann constant (J/K)
+
+# Planck's law (per wavelength in µm)
+def planck_law_lambda_um(wavelength_um, T):
+    wavelength_m = wavelength_um * 1e-6
+    exponent = (h * c) / (wavelength_m * k * T)
+    B = (2 * h * c**2) / (wavelength_m**5 * (np.exp(exponent) - 1))
+    return B * 1e-6  # Convert from per m to per µm
+
+
+
+# Temperatures
+T_sun = 5770
+T_earth = 254.9
+
+# Outgoing (Earth emission)
+E_lambda_out = planck_law_lambda_um(lam_um, T_earth)
+
+plt.figure(figsize=(10,6))
+plt.plot(lam_um, planck_law_lambda_um(lam_um, T_surface), label='No CO2 absorption')
+plt.plot(lam_um, I_out, label='With CO2 absorption')
+plt.xlim(0, 20)  # zoom on CO2 band for better visibility
+plt.xlabel('Wavelength (µm)')
+plt.ylabel('Spectral Irradiance (W/m²/µm)')
+plt.title('Outgoing Radiation Spectrum with CO2 Notch')
+plt.legend()
+plt.show()
