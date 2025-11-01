@@ -466,7 +466,7 @@ def outgoing_spectrum_eq6(nu_hitr_cm, sigma_hitr_cm2pmol,
     z0 = (k * T_surf) / (m_air * g)   # meters
 
     # troposphere top temperature
-    T_trop = T_surf - Gamma_LR * z0 * np.log(1.0 - eta)
+    T_trop = T_surf + Gamma_LR * z0 * np.log(1.0 - eta)
 
     # CO2 partial pressure and number density at surface (molecules per m^3)
     x_co2 = CO2_ppm * 1e-6
@@ -513,8 +513,8 @@ lam, F_clear, F_with, OD, Ttrop, z0 = outgoing_spectrum_eq6(nu, sigma, CO2_ppm=4
 # --- Plot result (zoom around CO2 band ~ 15 µm)
 plt.figure(figsize=(9,5))
 plt.plot(lam, F_clear, label='No CO2 (clear)', color='C0')
-plt.plot(lam, F_with, label='With CO2 ({} ppm)'.format(400), color='C1')
-plt.xlim(5,25)
+plt.plot(lam, F_with, label='With CO2 ({} ppm)'.format(400), color='C1', lw=0.5)
+plt.xlim(5,40)
 plt.xlabel('Wavelength (µm)')
 plt.ylabel('Spectral flux at TOA (W m$^{-2}$ µm$^{-1}$)')
 plt.title('Outgoing irradiance (single-slab isothermal troposphere, eqn (6))')
