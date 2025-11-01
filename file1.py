@@ -324,10 +324,6 @@ plt.show()
 
 
 
-####################################################
-###############################################
-###############################################
-
 def planck_law_lambda_um(wavelength_um, T):
     wavelength_m = wavelength_um * 1e-6
     exponent = (h * c) / (wavelength_m * k * T)
@@ -380,13 +376,14 @@ def planck_law_lambda_um(wavelength_um, T):
     return B * 1e-6  # Convert from per m to per µm
 
 
-
 # Temperatures
 T_sun = 5770
 T_earth = 254.9
 
 # Outgoing (Earth emission)
 E_lambda_out = planck_law_lambda_um(lam_um, T_earth)
+
+print(I_out)
 
 plt.figure(figsize=(10,6))
 plt.plot(lam_um, planck_law_lambda_um(lam_um, T_surface), label='No CO2 absorption')
@@ -397,3 +394,163 @@ plt.ylabel('Spectral Irradiance (W/m²/µm)')
 plt.title('Outgoing Radiation Spectrum with CO2 Notch')
 plt.legend()
 plt.show()
+
+
+########################################
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
+from scipy.constants import h, c, k, N_A
+from scipy.optimize import brentq
+
+# --- Helper: Planck per µm (W m^-2 sr^-1 µm^-1)
+def planck_per_um(lam_um, T):
+    lam = lam_um * 1e-6
+    a = 2.0 * h * c**2
+    x = (h * c) / (lam * k * T)
+    B_m = a / (lam**5 * (np.exp(x) - 1.0))      # W m^-2 sr^-1 m^-1
+    return B_m * 1e-6                           # W m^-2 sr^-1 µm^-1
+
+# --- Main function implementing eqn (6)
+def outgoing_spectrum_eq6(nu_hitr_cm, sigma_hitr_cm2pmol,
+                           CO2_ppm=400.0,
+                           T_surf=288.0, Gamma_LR=0.00649, eta=0.75,
+                           lam_min=0.1, lam_max=50.0, nlam=30000,
+                           use_sigma_units='cm2_per_mol'):
+    """
+    Returns (lam_grid_um, F_clear, F_with_CO2, OD_grid)
+    - nu_hitr_cm: array of wavenumbers (cm^-1)
+    - sigma_hitr_cm2pmol: cross-section aligned to nu_hitr_cm (cm^2 per molecule)
+    - CO2_ppm: CO2 mixing ratio in ppm
+    - use_sigma_units: 'cm2_per_mol' (default), 'm2_per_mol', or 'm_inv'
+      * if 'm_inv' then sigma array interpreted as absorption coefficient (m^-1)
+    """
+    # 1) make wavelength grid (µm)
+    lam_grid_um = np.linspace(lam_min, lam_max, nlam)
+
+    # 2) convert sigma to m^2/molecule if needed
+    if use_sigma_units == 'cm2_per_mol':
+        sigma_m2pmol = np.array(sigma_hitr_cm2pmol) * 1e-4
+    elif use_sigma_units == 'm2_per_mol':
+        sigma_m2pmol = np.array(sigma_hitr_cm2pmol)
+    elif use_sigma_units == 'm_inv':
+        # If the provided sigma is alpha (m^-1), we will treat differently below
+        sigma_alpha_minv = np.array(sigma_hitr_cm2pmol)  # rename input
+        sigma_m2pmol = None
+    else:
+        raise ValueError("use_sigma_units must be 'cm2_per_mol', 'm2_per_mol' or 'm_inv'")
+
+    # 3) Interpolate sigma (if in cross-section per molecule) onto lam grid
+    if sigma_m2pmol is not None:
+        wn_m = nu_hitr_cm * 100.0              # cm^-1 -> m^-1
+        lam_m_from_wn = 1.0 / wn_m
+        lam_um_from_wn = lam_m_from_wn * 1e6
+        interp = interp1d(lam_um_from_wn, sigma_m2pmol, bounds_error=False, fill_value=0.0)
+        sigma_grid = interp(lam_grid_um)      # m^2 per molecule
+    else:
+        # If input was m^-1 alpha given on some grid (nu_hitr_cm), convert/interp to lam grid
+        wn_m = nu_hitr_cm * 100.0
+        lam_m_from_wn = 1.0 / wn_m
+        lam_um_from_wn = lam_m_from_wn * 1e6
+        interp = interp1d(lam_um_from_wn, sigma_alpha_minv, bounds_error=False, fill_value=0.0)
+        alpha_grid = interp(lam_grid_um)      # m^-1
+        sigma_grid = None
+
+    # 4) compute z0, T_trop, column and OD
+    # mean molecular mass per molecule for air (kg per molecule)
+    m_air = 28.97e-3 / N_A
+    g = 9.80665
+
+    # scale-height-like effective column height z0 as described in your notes
+    z0 = (k * T_surf) / (m_air * g)   # meters
+
+    # troposphere top temperature
+    T_trop = T_surf - Gamma_LR * z0 * np.log(1.0 - eta)
+
+    # CO2 partial pressure and number density at surface (molecules per m^3)
+    x_co2 = CO2_ppm * 1e-6
+    p_surface = 101325.0
+    p_co2 = x_co2 * p_surface
+    N0 = p_co2 / (k * T_surf)   # molecules m^-3
+
+    # Optical depth
+    if sigma_grid is not None:
+        OD_grid = N0 * sigma_grid * z0                      # dimensionless (σ*molecules/m^3 * m)
+    else:
+        # if we were given alpha (m^-1): OD = alpha * z0
+        OD_grid = alpha_grid * z0
+
+    # 5) eqn (6) directional intensity at TOA (per µm)
+    B_surf = planck_per_um(lam_grid_um, T_surf)     # W m^-2 sr^-1 µm^-1
+    B_trop = planck_per_um(lam_grid_um, T_trop)
+    I_toa = B_surf * np.exp(-OD_grid) + B_trop * (1.0 - np.exp(-OD_grid))
+
+    # Convert to spectral flux (multiply by π): W m^-2 µm^-1
+    F_with_CO2 = np.pi * I_toa
+    F_clear = np.pi * B_surf
+
+    return lam_grid_um, F_clear, F_with_CO2, OD_grid, T_trop, z0
+
+# --- Example: use the arrays you produced earlier
+# Replace the following names with the arrays in your workspace:
+# nu (your nu grid used to build sigma) and sigma (resulting cross-section per molecule)
+# From your previous code: nu  (wavenumber grid) and sigma_cm2_per_mol (S·Lorentz sum)
+# If your sigma variable is already in m^2/molecule, pass use_sigma_units='m2_per_mol'
+
+# Example guard: ensure your variables exist
+try:
+    _ = nu    # nu from your previous code
+    _ = sigma # sigma from your previous code (you built sigma as S * Lorentz earlier)
+except NameError:
+    raise RuntimeError("Please run the HITRAN line build step first so 'nu' and 'sigma' exist.")
+
+# In your earlier script sigma was in same units you plotted on y-axis; if that was cm^2/molecule, use:
+lam, F_clear, F_with, OD, Ttrop, z0 = outgoing_spectrum_eq6(nu, sigma, CO2_ppm=400.0,
+                                                           T_surf=288.0,
+                                                           use_sigma_units='cm2_per_mol')
+
+# --- Plot result (zoom around CO2 band ~ 15 µm)
+plt.figure(figsize=(9,5))
+plt.plot(lam, F_clear, label='No CO2 (clear)', color='C0')
+plt.plot(lam, F_with, label='With CO2 ({} ppm)'.format(400), color='C1')
+plt.xlim(5,25)
+plt.xlabel('Wavelength (µm)')
+plt.ylabel('Spectral flux at TOA (W m$^{-2}$ µm$^{-1}$)')
+plt.title('Outgoing irradiance (single-slab isothermal troposphere, eqn (6))')
+plt.legend()
+plt.grid(alpha=0.3)
+plt.show()
+
+##################################################
+##################################################
+
+
+
+# --- compute integrated flux change and optional ΔTs to restore balance
+F_total_clear = np.trapz(F_clear, lam)    # W/m^2
+F_total_with  = np.trapz(F_with, lam)
+deltaF = F_total_clear - F_total_with
+
+print(f"z0 = {z0:.1f} m, T_trop = {Ttrop:.2f} K")
+print(f"Integrated outgoing flux (no CO2): {F_total_clear:.3f} W/m^2")
+print(f"Integrated outgoing flux (with CO2): {F_total_with:.3f} W/m^2")
+print(f"Net flux reduction: {deltaF:.3f} W/m^2")
+
+# Optional: find Ts increase needed to restore flux (simple bracketed root)
+def total_flux_for_Ts(Ts, CO2_ppm=400.0):
+    lam_tmp, Fclr_tmp, Fwith_tmp, OD_tmp, Ttrop_tmp, z0_tmp = outgoing_spectrum_eq6(
+        nu, sigma, CO2_ppm=CO2_ppm, T_surf=Ts, use_sigma_units='cm2_per_mol')
+    return np.trapz(Fwith_tmp, lam_tmp)
+
+# bracket and solve for Ts_new such that integrated flux(with_CO2 at Ts_new) == F_total_clear
+from scipy.optimize import brentq
+Ts0 = 288.0
+Ts_up = 310.0
+f_low = total_flux_for_Ts(Ts0) - F_total_clear
+f_high = total_flux_for_Ts(Ts_up) - F_total_clear
+if f_low * f_high < 0:
+    Ts_new = brentq(lambda T: total_flux_for_Ts(T) - F_total_clear, Ts0, Ts_up)
+    print(f"Surface temperature to restore outgoing flux: {Ts_new:.3f} K  (ΔT = {Ts_new - Ts0:.3f} K)")
+else:
+    print("Bracket failed for ΔT solve; try a larger Ts_up or inspect OD magnitudes.")
