@@ -49,6 +49,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy import integrate
 from scipy.optimize import fsolve
+from scipy.ndimage import gaussian_filter1d
 
 # Constants
 h = 6.626e-34  # Planck constant (J·s)
@@ -182,10 +183,16 @@ plt.show()
 ##########################
 ##########################
 
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.ndimage import gaussian_filter1d
+from scipy.optimize import curve_fit
+
 # -----------------------------
 # Parameters
 # -----------------------------
-pressure_atm = 1.0  # pressure in atm, adjust as needed
+pressure_atm = 1.0  # pressure in atm
 
 # -----------------------------
 # Load HITRAN data
@@ -193,51 +200,120 @@ pressure_atm = 1.0  # pressure in atm, adjust as needed
 HITRan_data = pd.read_csv('68ffa2cd.txt', usecols=[0,1,2], header=0)
 HITRan_data.columns = ['Wavenumber', 'Intensity', 'gamma_air']
 
-# Convert columns to numeric
-HITRan_data['Wavenumber'] = pd.to_numeric(HITRan_data['Wavenumber'], errors='coerce')
-HITRan_data['Intensity'] = pd.to_numeric(HITRan_data['Intensity'], errors='coerce')
-HITRan_data['gamma_air'] = pd.to_numeric(HITRan_data['gamma_air'], errors='coerce')
+# Convert to numeric
+HITRan_data = HITRan_data.apply(pd.to_numeric, errors='coerce')
 
-# Filter data to desired wavenumber range
+# Filter data
 filtered_data = HITRan_data[(HITRan_data['Wavenumber'] >= 550) & 
                             (HITRan_data['Wavenumber'] <= 770)]
 
 # -----------------------------
 # Extract data
 # -----------------------------
-nu0 = filtered_data['Wavenumber'].values       # line centers (cm^-1)
-S = filtered_data['Intensity'].values          # line intensities (cm^-1/(molecule·cm^-2))
-gamma_air = filtered_data['gamma_air'].values  # air-broadened HWHM (cm^-1/atm)
+nu0 = filtered_data['Wavenumber'].values
+S = filtered_data['Intensity'].values
+gamma_air = filtered_data['gamma_air'].values
 
-# Scale gamma by actual pressure
+# Scale gamma by pressure
 gamma = gamma_air * pressure_atm
 
 # -----------------------------
-# Create fine wavenumber grid
+# Fine wavenumber grid
 # -----------------------------
-nu = np.linspace(nu0.min() - 5, nu0.max() + 5, 1000)  # cm^-1
+nu = np.linspace(nu0.min() - 5, nu0.max() + 5, 1000)
 
 # -----------------------------
 # Compute Lorentzian cross-section
 # -----------------------------
 sigma = np.zeros_like(nu)
-
 for i in range(len(nu0)):
-    L = (1/np.pi) * gamma[i] / ((nu - nu0[i])**2 + gamma[i]**2)  # Lorentzian HWHM
-    sigma += S[i] * L  # cross-section in cm^2/molecule
+    L = (1/np.pi) * gamma[i] / ((nu - nu0[i])**2 + gamma[i]**2)
+    sigma += S[i] * L
+
+# -----------------------------
+# Method of Least Squares Triangles in Log-Log Space
+# -----------------------------
+mask = sigma > 0
+nu_pos = nu[mask]
+sigma_pos = sigma[mask]
+
+sigma_smooth = gaussian_filter1d(sigma_pos, sigma=5.0)
+
+peak_idx = np.argmax(sigma_smooth)
+nu_peak = nu_pos[peak_idx]
+sigma_peak = sigma_pos[peak_idx]
+
+log_sigma = np.log10(sigma_pos)
+log_peak = log_sigma[peak_idx]
+
+# Use full range (no restriction near the peak)
+nu_near = nu_pos
+log_near = log_sigma
+
+# Split into left/right sides
+peak_idx_near = np.argmin(np.abs(nu_near - nu_peak))
+nu_peak_near = nu_near[peak_idx_near]
+log_peak_near = log_near[peak_idx_near]
+
+nu_left = nu_near[nu_near < nu_peak_near]
+nu_right = nu_near[nu_near >= nu_peak_near]
+log_left = log_near[nu_near < nu_peak_near]
+log_right = log_near[nu_near >= nu_peak_near]
+
+# Fit slopes (through the vertex)
+Xl = nu_left - nu_peak_near
+Yl = log_left - log_peak_near
+a_left = np.sum(Xl * Yl) / np.sum(Xl**2) if len(Xl) > 1 else 0.0
+
+Xr = nu_right - nu_peak_near
+Yr = log_right - log_peak_near
+a_right = np.sum(Xr * Yr) / np.sum(Xr**2) if len(Xr) > 1 else 0.0
+
+fit_log_left = a_left * (nu_left - nu_peak_near) + log_peak_near
+fit_log_right = a_right * (nu_right - nu_peak_near) + log_peak_near
+
+fit_left = 10**fit_log_left
+fit_right = 10**fit_log_right
+
+# -----------------------------
+# Nonlinear least squares Lorentzian fit (no restriction)
+# -----------------------------
+def lorentz(nu, A, nu0, Gamma):
+    return (A/np.pi) * (Gamma / ((nu - nu0)**2 + Gamma**2))
+
+# Fit across *entire* dataset where sigma > 0
+nu_fit = nu_pos
+sigma_fit = sigma_pos
+
+# Initial guesses
+A0 = np.trapz(sigma_fit, nu_fit) * np.pi
+nu0_0 = nu_fit[np.argmax(sigma_fit)]
+Gamma0 = 1.0
+p0 = [A0, nu0_0, Gamma0]
+
+# Perform fit
+popt, pcov = curve_fit(lorentz, nu_fit, sigma_fit, p0=p0, maxfev=10000)
+A_fit, nu0_fit, Gamma_fit = popt
+
+# Compute fitted Lorentzian
+sigma_lor_fit = lorentz(nu, *popt)
 
 # -----------------------------
 # Plotting
 # -----------------------------
-
 plt.figure(figsize=(10, 6))
 plt.xlim(600, 740)
 plt.ylim(1e-22, 1e-17)
-plt.yscale('log')  # Correct function to set log scale
-plt.plot(nu, sigma, color='blue', lw=1.5, label='Lorentzian cross-section', zorder=1)
-plt.scatter(nu0, S, color='red', s=5, alpha=0.8, zorder=2)
+plt.yscale('log')
+
+plt.plot(nu, sigma, color='blue', lw=1.5, label='Lorentzian cross-section')
+plt.scatter(nu0, S, color='red', s=5, alpha=0.8, label='HITRAN lines')
+plt.plot(nu_left, fit_left, color='yellow', lw=3, label='LS triangle (left)')
+plt.plot(nu_right, fit_right, color='yellow', lw=3)
+plt.plot(nu, sigma_lor_fit, color='green', lw=2, label='Full LS Lorentz fit')
+
 plt.xlabel('Wavenumber (cm⁻¹)')
 plt.ylabel('Absorption cross-section (cm²/molecule)', color='blue')
+plt.legend()
 plt.tick_params(axis='y', labelcolor='blue')
-
 plt.show()
