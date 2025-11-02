@@ -123,6 +123,7 @@ print(Rightside)
 
 plt.figure(figsize=(10, 6))
 plt.plot(lamda_um, E_lambda_out, label='Outgoing (254.9 K)')
+plt.xlim(0,20)
 plt.xlabel('Wavelength (µm)')
 plt.ylabel('Spectral Irradiance (W m⁻² µm⁻¹)')
 plt.title('Outgoing Black Body Radiation Spectrum at 254.9 K')
@@ -427,22 +428,8 @@ B_trop = planck_per_um(lam_grid_um, T_trop)
 I_toa = B_surf * np.exp(-OD) + B_trop * (1.0 - np.exp(-OD))
 
 # spectral flux at TOA (multiply by π) in W m^-2 µm^-1
-F_toa = np.pi * I_toa
-F_clear = np.pi * B_surf
-
-# -----------------------------
-# Diagnostics
-# -----------------------------
-print("Diagnostics:")
-print(f"  z0 = {z0:.1f} m, T_surf = {T_surf:.1f} K, T_trop = {T_trop:.2f} K")
-print(f"  OD: min = {OD.min():.3e}, median = {np.median(OD):.3e}, max = {OD.max():.3e}")
-print(f"  sigma_grid_m2: min = {sigma_grid_m2.min():.3e}, max = {sigma_grid_m2.max():.3e}")
-
-F_total_clear = np.trapz(F_clear, lam_grid_um)
-F_total_with  = np.trapz(F_toa, lam_grid_um)
-print(f"  Integrated flux (no CO2)   = {F_total_clear:.3f} W/m^2")
-print(f"  Integrated flux (with CO2) = {F_total_with:.3f} W/m^2")
-print(f"  Delta F = {F_total_clear - F_total_with:.3f} W/m^2")
+F_toa = I_toa
+F_clear = B_surf
 
 # -----------------------------
 # Plots
