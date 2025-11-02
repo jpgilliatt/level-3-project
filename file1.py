@@ -230,7 +230,6 @@ for i in range(len(nu0)):
     L = (1/np.pi) * gamma[i] / ((nu - nu0[i])**2 + gamma[i]**2)
     sigma += S[i] * L
 
-
 # -----------------------------
 # Method of Least Squares Triangles in Log-Log Space
 # -----------------------------
@@ -406,11 +405,88 @@ plt.show()
 # -----------------------------
 # James Effort: Outgoing Spectrum with CO2 Absorption
 # -----------------------------
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
-def optical_depth_lamda(CO2_ppm):
-    
-    M_air = 28.97e-3 / 6.022e23  # kg per molecule
-    g = 9.80665              # m/s²
-    T_surf = 254.9  # K
-    Z0 = M_air * g / (k * T_surf)
+# -----------------------------
+# Constants
+# -----------------------------
+h = 6.62607015e-34    # J*s
+c = 299792458.0       # m/s
+k = 1.380649e-23      # J/K
+g = 9.80665            # m/s^2
+N_A = 6.02214076e23    # mol^-1
 
+# -----------------------------
+# Load HITRAN data
+# -----------------------------
+HITRAN_data = pd.read_csv('68ffa2cd.txt', usecols=[0, 1, 2], header=0)
+HITRAN_data.columns = ['Wavenumber', 'Intensity', 'gamma_air']
+HITRAN_data = HITRAN_data.apply(pd.to_numeric, errors='coerce')
+
+nu0 = HITRAN_data['Wavenumber'].values  # in cm^-1
+S = HITRAN_data['Intensity'].values
+
+# convert wavenumber → wavelength
+lambda_m = 1 / (nu0 * 100)  # meters
+lambda_um = lambda_m * 1e6  # microns
+
+# dummy cross-section (replace with your σ(ν) from earlier)
+sigma = S * 1e-20  # cm^2/molecule (example scaling)
+sigma_m2 = sigma * 1e-4  # convert cm^2 to m^2
+
+# -----------------------------
+# Optical Depth Function
+# -----------------------------
+def optical_depth_lambda(CO2_ppm, sigma_m2, lambda_m):
+    M_air = 28.97e-3 / N_A  # kg per molecule
+    T_surf = 254.9          # K
+
+    # Correct scale height (m)
+    Z0 = (k * T_surf) / (M_air * g)
+
+    # Air number density (molecules/m³)
+    N_air = 101325 / (k * T_surf)
+    N_CO2 = CO2_ppm * 1e-6 * N_air
+
+    # σ(λ) from σ(ν): σ(λ) = σ(ν)/λ²
+    sigma_lambda = sigma_m2 / (lambda_m**2)
+
+    # Optical depth (dimensionless)
+    OD = N_CO2 * sigma_lambda * Z0
+    return OD
+
+# -----------------------------
+# Planck Function (per λ)
+# -----------------------------
+def planck_law_lambda(lambda_m, T):
+    x = (h * c) / (lambda_m * k * T)
+    return (2 * h * c**2) / (lambda_m**5 * (np.expm1(x)))
+
+# -----------------------------
+# Outgoing spectrum
+# -----------------------------
+def outgoing_spectrum_CO2(lambda_m, sigma_m2, CO2_ppm=400):
+    T_surf = 254.9
+    T_trop = 217.0
+
+    OD = optical_depth_lambda(CO2_ppm, sigma_m2, lambda_m)
+    B_s = planck_law_lambda(lambda_m, T_surf)
+    B_t = planck_law_lambda(lambda_m, T_trop)
+
+    I = B_s * np.exp(-OD) + B_t * (1 - np.exp(-OD))
+    return I, OD
+
+# -----------------------------
+# Compute and plot
+# -----------------------------
+I_lambda, OD_lambda = outgoing_spectrum_CO2(lambda_m, sigma_m2, CO2_ppm=400)
+
+plt.figure(figsize=(9,5))
+plt.plot(lambda_um, I_lambda*1e-6, color='C2', label='With CO₂ absorption')
+plt.xlabel('Wavelength (μm)')
+plt.ylabel('Radiance (W m$^{-2}$ sr$^{-1}$ μm$^{-1}$)')
+plt.legend()
+plt.tight_layout()
+plt.show()
