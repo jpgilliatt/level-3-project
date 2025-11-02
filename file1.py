@@ -319,245 +319,130 @@ plt.legend()
 plt.tick_params(axis='y', labelcolor='blue')
 plt.show()
 
+##############################################################
+##############################################################
 
-###############################
-###############################
-
-# -----------------------------
-# Co-Pilot Effort: Outgoing Spectrum with CO2 Absorption
-# -----------------------------
-
-
+# Outgoing spectrum (single-slab isothermal troposphere, eqn (6))
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy.constants import h, c, k, N_A
 
-# --- Planck function per µm
-def planck_per_um(lam_um, T):
-    lam_m = lam_um * 1e-6
-    a = 2.0 * h * c**2
-    x = (h * c) / (lam_m * k * T)
-    B_m = a / (lam_m**5 * (np.exp(x) - 1.0))   # W m^-2 sr^-1 m^-1
-    return B_m * 1e-6                           # W m^-2 sr^-1 µm^-1
-
-# --- Outgoing spectrum (single-slab troposphere) simplified
-def outgoing_spectrum(nu_hitr_cm, sigma_hitr_cm2pmol,
-                      CO2_ppm=400, T_surf=288,
-                      Gamma_LR=0.00649, eta=0.75,
-                      lam_min=0.1, lam_max=50.0, nlam=30000):
-    """
-    Compute outgoing spectrum at TOA with and without CO2 absorption.
-    nu_hitr_cm: wavenumber grid (cm^-1)
-    sigma_hitr_cm2pmol: absorption cross-section (cm^2/molecule)
-    Returns: lam_grid_um, F_clear, F_with_CO2
-    """
-
-    # 1) Wavelength grid (µm)
-    lam_grid_um = np.linspace(lam_min, lam_max, nlam)
-
-    # 2) Interpolate sigma onto wavelength grid
-    lam_um_from_wn = 1e4 / nu_hitr_cm  # cm^-1 -> µm
-    interp_sigma = interp1d(lam_um_from_wn, sigma_hitr_cm2pmol, 
-                            bounds_error=False, fill_value=0.0)
-    sigma_grid = interp_sigma(lam_grid_um) * 1e-4  # convert cm² -> m²
-
-    # 3) Compute effective troposphere height z0 and T_trop
-    m_air = 28.97e-3 / N_A  # kg per molecule
-    g = 9.80665              # m/s²
-    z0 = (k * T_surf) / (m_air * g)
-    T_trop = T_surf + Gamma_LR * z0 * np.log(1 - eta)
-
-    # 4) CO2 number density at surface
-    x_co2 = CO2_ppm * 1e-6
-    p_surface = 101325.0
-    N0 = (x_co2 * p_surface) / (k * T_surf)  # molecules/m³
-
-    # 5) Optical depth
-    OD = N0 * sigma_grid * z0
-
-    # 6) Single-slab radiative transfer (eqn 6)
-    B_surf = planck_per_um(lam_grid_um, T_surf)
-    B_trop = planck_per_um(lam_grid_um, T_trop)
-    I_toa = B_surf * np.exp(-OD) + B_trop * (1 - np.exp(-OD))
-
-    # Convert to spectral flux (W m^-2 µm^-1)
-    F_clear = np.pi * B_surf
-    F_with_CO2 = np.pi * I_toa
-
-    return lam_grid_um, F_clear, F_with_CO2
-
-
-lam, F_clear, F_with = outgoing_spectrum(nu, sigma, CO2_ppm=400.0, T_surf=288.0)
-
-plt.figure(figsize=(9,5))
-plt.plot(lam, F_clear, label='No CO2 (clear)', color='C0')
-plt.plot(lam, F_with, label='With CO2 (400 ppm)', color='C1', lw=0.8)
-plt.xlim(12, 20)
-plt.xlabel('Wavelength (µm)')
-plt.ylabel('Spectral flux at TOA (W m$^{-2}$ µm$^{-1}$)')
-plt.title('Outgoing irradiance (single-slab isothermal troposphere)')
-plt.legend()
-plt.grid(alpha=0.3)
-plt.show()
-
+# -----------------------------
+# User inputs / file
+# -----------------------------
+hitran_file = '68ffa2cd.txt'   # replace if needed
+wn_min, wn_max = 550.0, 770.0  # cm^-1 band selection
+pressure_atm = 1.0             # atm
+CO2_ppm = 400                # ppm to model
+T_surf = 288.0                 # surface temperature K (choose 288 K typical)
+Gamma_LR = 0.00649             # K/m
+eta = 0.75
 
 # -----------------------------
-# James Effort: Outgoing Spectrum with CO2 Absorption
+# Load HITRAN-like file (wavenumber [cm^-1], intensity, gamma_air)
 # -----------------------------
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+df = pd.read_csv(hitran_file, usecols=[0,1,2], header=0)
+df.columns = ['Wavenumber', 'Intensity', 'gamma_air']
+df = df.apply(pd.to_numeric, errors='coerce').dropna()
+df = df[(df['Wavenumber'] >= wn_min) & (df['Wavenumber'] <= wn_max)]
 
-# -----------------------------
-# Constants
-# -----------------------------
-h = 6.62607015e-34    # J*s
-c = 299792458.0       # m/s
-k = 1.380649e-23      # J/K
-g = 9.80665            # m/s^2
-N_A = 6.02214076e23    # mol^-1
+nu0 = df['Wavenumber'].values        # cm^-1
+S = df['Intensity'].values           # line strength (units assumed consistent)
+gamma_air = df['gamma_air'].values
+gamma = gamma_air * pressure_atm
 
 # -----------------------------
-# Load HITRAN data
+# Build a high-resolution wavenumber grid and Lorentzian sigma(ν)
+# (sigma here will be in same units as S×Lorentz; treat as cm^2/molecule and convert)
 # -----------------------------
-HITRAN_data = pd.read_csv('68ffa2cd.txt', usecols=[0, 1, 2], header=0)
-HITRAN_data.columns = ['Wavenumber', 'Intensity', 'gamma_air']
-HITRAN_data = HITRAN_data.apply(pd.to_numeric, errors='coerce')
+nu = np.linspace(nu0.min() - 5, nu0.max() + 5, 5000)   # cm^-1
+sigma_cm2_per_mol = np.zeros_like(nu)
+for i in range(len(nu0)):
+    L = (1.0/np.pi) * gamma[i] / ((nu - nu0[i])**2 + gamma[i]**2)
+    sigma_cm2_per_mol += S[i] * L
 
-nu0 = HITRAN_data['Wavenumber'].values  # in cm^-1
-S = HITRAN_data['Intensity'].values
-
-# convert wavenumber → wavelength
-lambda_m = 1 / (nu0 * 100)  # meters
-lambda_um = lambda_m * 1e6  # microns
-
-# dummy cross-section (replace with your σ(ν) from earlier)
-sigma = S * 1e-20  # cm^2/molecule (example scaling)
-sigma_m2 = sigma * 1e-4  # convert cm^2 to m^2
+# convert sigma to m^2 per molecule (cm^2 -> m^2)
+sigma_m2_per_mol = sigma_cm2_per_mol * 1e-4
 
 # -----------------------------
-# Optical Depth Function
+# Interpolate sigma(λ) onto regular wavelength grid (µm)
 # -----------------------------
-def optical_depth_lambda(CO2_ppm, sigma_m2, lambda_m):
-    M_air = 28.97e-3 / N_A  # kg per molecule
-    T_surf = 254.9          # K
-
-    # Correct scale height (m)
-    Z0 = (k * T_surf) / (M_air * g)
-
-    # Air number density (molecules/m³)
-    N_air = 101325 / (k * T_surf)
-    N_CO2 = CO2_ppm * 1e-6 * N_air
-
-    # σ(λ) from σ(ν): σ(λ) = σ(ν)/λ²
-    sigma_lambda = sigma_m2 / (lambda_m**2)
-
-    # Optical depth (dimensionless)
-    OD = N_CO2 * sigma_lambda * Z0
-    return OD
-
-# -----------------------------
-# Planck Function (per λ)
-# -----------------------------
-def planck_law_lambda(lambda_m, T):
-    x = (h * c) / (lambda_m * k * T)
-    return (2 * h * c**2) / (lambda_m**5 * (np.expm1(x)))
-
-# -----------------------------
-# Outgoing spectrum
-# -----------------------------
-def outgoing_spectrum_CO2(lambda_m, sigma_m2, CO2_ppm=400):
-    T_surf = 254.9
-    T_trop = 217.0
-
-    OD = optical_depth_lambda(CO2_ppm, sigma_m2, lambda_m)
-    B_s = planck_law_lambda(lambda_m, T_surf)
-    B_t = planck_law_lambda(lambda_m, T_trop)
-
-    I = B_s * np.exp(-OD) + B_t * (1 - np.exp(-OD))
-    return I, OD
-
-# -----------------------------
-# Compute and plot
-# -----------------------------
-I_lambda, OD_lambda = outgoing_spectrum_CO2(lambda_m, sigma_m2, CO2_ppm=400)
-
-plt.figure(figsize=(9,5))
-plt.plot(lambda_um, I_lambda*1e-6, color='C2', label='With CO₂ absorption')
-plt.xlabel('Wavelength (μm)')
-plt.ylabel('Radiance (W m$^{-2}$ sr$^{-1}$ μm$^{-1}$)')
-plt.legend()
-plt.tight_layout()
-plt.show()
-
-
-# --- Convert sigma to m^2 per molecule
-sigma_m2_per_mol = np.array(sigma) * 1e-4   # cm^2 -> m^2
-
-# --- Build regular wavelength grid (µm) for Planck and plotting
-lam_min_um = 5.0    # focus around 15 µm band
-lam_max_um = 25.0
-nlam = 20000
-lam_grid_um = np.linspace(lam_min_um, lam_max_um, nlam)
-lam_grid_m = lam_grid_um * 1e-6
-
-# --- Interpolate sigma onto wavelength grid
-# convert your nu (cm^-1) -> wavelength µm
-wn_m = np.array(nu) * 100.0          # cm^-1 -> m^-1
+wn_m = nu * 100.0                    # cm^-1 -> m^-1
 lam_m_from_wn = 1.0 / wn_m           # m
 lam_um_from_wn = lam_m_from_wn * 1e6 # µm
-# sort for safe interpolation
+
+lam_min_um, lam_max_um = 5.0, 25.0
+nlam = 20000
+lam_grid_um = np.linspace(lam_min_um, lam_max_um, nlam)
+# safe interpolation (sort source)
 order = np.argsort(lam_um_from_wn)
-interp = interp1d(lam_um_from_wn[order], sigma_m2_per_mol[order],
-                  bounds_error=False, fill_value=0.0)
-sigma_grid_m2 = interp(lam_grid_um)  # m^2 / molecule on lam_grid
+interp_sigma = interp1d(lam_um_from_wn[order], sigma_m2_per_mol[order],
+                        bounds_error=False, fill_value=0.0)
+sigma_grid_m2 = interp_sigma(lam_grid_um)   # m^2 / molecule
 
-# --- Atmosphere and CO2 number density (use ppm)
-def N_co2_ppm_to_number_density(ppm, p=101325.0, T=288.0):
-    x = ppm * 1e-6
-    return x * p / (k * T)   # molecules per m^3
-
-# --- z0 and troposphere top temperature (ensure T_trop < T_surf)
-T_surf = 288.0    # K (set to whatever you want)
+# -----------------------------
+# Atmospheric column and optical depth
+# -----------------------------
+# mean molecular mass per molecule for air (kg per molecule)
+m_air = 28.97e-3 / N_A
 g = 9.80665
-m_air = 28.97e-3 / N_A   # kg per molecule
-z0 = (k * T_surf) / (m_air * g)   # effective column height (m)
-Gamma_LR = 0.00649
-eta = 0.75
-# produce T_trop < T_surf
-deltaT = Gamma_LR * z0 * (-np.log(1.0 - eta))   # positive
+
+# effective column height z0 = k * Ts / (m_air * g)
+z0 = (k * T_surf) / (m_air * g)   # m
+
+# troposphere top temperature (ensure T_trop < T_surf)
+deltaT = Gamma_LR * z0 * (-np.log(1.0 - eta))
 T_trop = T_surf - deltaT
 
-# --- Planck per µm (W m^-2 sr^-1 µm^-1)
+# number density of CO2 at surface (molecules m^-3)
+N0_co2 = (CO2_ppm * 1e-6) * 101325.0 / (k * T_surf)
+
+# optical depth OD(λ) = N0 * sigma(λ) * z0
+OD = N0_co2 * sigma_grid_m2 * z0
+
+# -----------------------------
+# Planck per µm (W m^-2 sr^-1 µm^-1)
+# -----------------------------
 def planck_per_um(lam_um, T):
     lam = lam_um * 1e-6
     x = (h * c) / (lam * k * T)
     B_m = (2.0 * h * c**2) / (lam**5 * (np.exp(x) - 1.0))
-    return B_m * 1e-6   # W m^-2 sr^-1 µm^-1
+    return B_m * 1e-6
 
-# --- Optical depth OD = N0 * sigma(λ) * z0
-CO2_ppm = 400.0
-N0_co2 = N_co2_ppm_to_number_density(CO2_ppm, p=101325.0, T=T_surf)  # m^-3
-OD = N0_co2 * sigma_grid_m2 * z0      # dimensionless
+B_surf = planck_per_um(lam_grid_um, T_surf)
+B_trop = planck_per_um(lam_grid_um, T_trop)
 
-# --- Check OD signs and ranges
-print("z0 (m) =", z0, "T_surf (K) =", T_surf, "T_trop (K) =", T_trop)
-print("OD min, median, max:", OD.min(), np.median(OD), OD.max())
+# Eqn (6) directional intensity at TOA (per µm)
+I_toa = B_surf * np.exp(-OD) + B_trop * (1.0 - np.exp(-OD))
 
-# --- Eq (6) directional intensity (per µm)
-B_s = planck_per_um(lam_grid_um, T_surf)
-B_t = planck_per_um(lam_grid_um, T_trop)
-I_toa = B_s * np.exp(-OD) + B_t * (1.0 - np.exp(-OD))
-
-# If you want spectral flux at TOA (W m^-2 µm^-1) multiply by π
+# spectral flux at TOA (multiply by π) in W m^-2 µm^-1
 F_toa = np.pi * I_toa
-F_clear = np.pi * B_s   # no CO2
+F_clear = np.pi * B_surf
 
-# --- Plotting (spectral flux)
+# -----------------------------
+# Diagnostics
+# -----------------------------
+print("Diagnostics:")
+print(f"  z0 = {z0:.1f} m, T_surf = {T_surf:.1f} K, T_trop = {T_trop:.2f} K")
+print(f"  OD: min = {OD.min():.3e}, median = {np.median(OD):.3e}, max = {OD.max():.3e}")
+print(f"  sigma_grid_m2: min = {sigma_grid_m2.min():.3e}, max = {sigma_grid_m2.max():.3e}")
+
+F_total_clear = np.trapz(F_clear, lam_grid_um)
+F_total_with  = np.trapz(F_toa, lam_grid_um)
+print(f"  Integrated flux (no CO2)   = {F_total_clear:.3f} W/m^2")
+print(f"  Integrated flux (with CO2) = {F_total_with:.3f} W/m^2")
+print(f"  Delta F = {F_total_clear - F_total_with:.3f} W/m^2")
+
+# -----------------------------
+# Plots
+# -----------------------------
 plt.figure(figsize=(9,5))
-plt.plot(lam_grid_um, F_clear, label='No CO2 (clear)', color='C0')
-plt.plot(lam_grid_um, F_toa, label=f'With CO2 ({int(CO2_ppm)} ppm)', color='C1')
+plt.plot(lam_grid_um, F_clear, label='No CO2 (clear)', color='C0', lw=1)
+plt.plot(lam_grid_um, F_toa, label=f'With CO2 ({int(CO2_ppm)} ppm)', color='C1', lw=1)
+plt.xlim(5, 25)
+plt.ylim(0, np.max(F_clear[(lam_grid_um>8)&(lam_grid_um<12)])*1.2)
 plt.xlabel('Wavelength (µm)')
 plt.ylabel('Spectral flux at TOA (W m$^{-2}$ µm$^{-1}$)')
 plt.title('Outgoing irradiance (single-slab isothermal troposphere, eqn (6))')
