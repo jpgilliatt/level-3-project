@@ -230,6 +230,7 @@ for i in range(len(nu0)):
     L = (1/np.pi) * gamma[i] / ((nu - nu0[i])**2 + gamma[i]**2)
     sigma += S[i] * L
 
+
 # -----------------------------
 # Method of Least Squares Triangles in Log-Log Space
 # -----------------------------
@@ -312,6 +313,7 @@ plt.plot(nu_left, fit_left, color='yellow',linestyle= '--', lw=3, zorder=3)
 plt.plot(nu_right, fit_right, color='yellow', linestyle= '--', lw=3, zorder=3, label='Least Squares fit')
 plt.plot(nu, sigma_lor_fit, color='green', linestyle= '--',lw=2, label='Full LS Lorentz fit', zorder=4)
 
+
 plt.xlabel('Wavenumber (cm⁻¹)')
 plt.ylabel('Absorption cross-section (cm²/molecule)', color='blue')
 plt.legend()
@@ -321,6 +323,11 @@ plt.show()
 
 ###############################
 ###############################
+
+# -----------------------------
+# Co-Pilot Effort: Outgoing Spectrum with CO2 Absorption
+# -----------------------------
+
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -337,7 +344,7 @@ def planck_per_um(lam_um, T):
 
 # --- Outgoing spectrum (single-slab troposphere) simplified
 def outgoing_spectrum(nu_hitr_cm, sigma_hitr_cm2pmol,
-                      CO2_ppm=400.0, T_surf=288.0,
+                      CO2_ppm=400, T_surf=288,
                       Gamma_LR=0.00649, eta=0.75,
                       lam_min=0.1, lam_max=50.0, nlam=30000):
     """
@@ -387,7 +394,7 @@ lam, F_clear, F_with = outgoing_spectrum(nu, sigma, CO2_ppm=400.0, T_surf=288.0)
 plt.figure(figsize=(9,5))
 plt.plot(lam, F_clear, label='No CO2 (clear)', color='C0')
 plt.plot(lam, F_with, label='With CO2 (400 ppm)', color='C1', lw=0.8)
-plt.xlim(5, 40)
+plt.xlim(12, 20)
 plt.xlabel('Wavelength (µm)')
 plt.ylabel('Spectral flux at TOA (W m$^{-2}$ µm$^{-1}$)')
 plt.title('Outgoing irradiance (single-slab isothermal troposphere)')
@@ -395,4 +402,15 @@ plt.legend()
 plt.grid(alpha=0.3)
 plt.show()
 
+
+# -----------------------------
+# James Effort: Outgoing Spectrum with CO2 Absorption
+# -----------------------------
+
+def optical_depth_lamda(CO2_ppm):
+    
+    M_air = 28.97e-3 / 6.022e23  # kg per molecule
+    g = 9.80665              # m/s²
+    T_surf = 254.9  # K
+    Z0 = M_air * g / (k * T_surf)
 
