@@ -102,6 +102,9 @@ A_in = integrate.simpson(E_lambda_in, lamda_um)
 A_out = integrate.simpson(E_lambda_out, lamda_um)
 A_E490 = integrate.simpson(E490Spectrum_Irradiance, E490Spectrum_lamda)
 
+print(A_out)
+print(A_in)
+
 #solving for earth surface temperature without atmosphere
 # Energy balance (no atmosphere):
 # (1 - albedo) * ∫ I_nu_sun dν  =  4 * π * ∫ B_nu_earth(T) dν
@@ -118,6 +121,12 @@ Rightside = 4*np.pi*A_out
 print(Leftside)
 print(Rightside)
 
+plt.figure(figsize=(10, 6))
+plt.plot(lamda_um, E_lambda_out, label='Outgoing (254.9 K)')
+plt.xlabel('Wavelength (µm)')
+plt.ylabel('Spectral Irradiance (W m⁻² µm⁻¹)')
+plt.title('Outgoing Black Body Radiation Spectrum at 254.9 K')
+plt.show()
 
 # Plotting
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
@@ -333,10 +342,10 @@ from scipy.constants import h, c, k, N_A
 # User inputs / file
 # -----------------------------
 hitran_file = '68ffa2cd.txt'   # replace if needed
-wn_min, wn_max = 550.0, 770.0  # cm^-1 band selection
+wn_min, wn_max = 400.0, 899.0  # cm^-1 band selection
 pressure_atm = 1.0             # atm
 CO2_ppm = 400                # ppm to model
-T_surf = 288.0                 # surface temperature K (choose 288 K typical)
+T_surf = 254.9                 # surface temperature K (choose 288 K typical)
 Gamma_LR = 0.00649             # K/m
 eta = 0.75
 
@@ -449,3 +458,26 @@ plt.title('Outgoing irradiance (single-slab isothermal troposphere, eqn (6))')
 plt.legend()
 plt.grid(alpha=0.3)
 plt.show()
+
+# integrate spectral flux (W m^-2)
+F_total_with_CO2 = integrate.simpson(F_toa, lam_grid_um)   # W/m^2
+F_total_clear = integrate.simpson(F_clear, lam_grid_um)    # W/m^2
+
+print(f"Integrated flux (no CO2)   = {F_total_clear:.3f} W/m^2")
+print(f"Integrated flux (with CO2) = {F_total_with_CO2:.3f} W/m^2")
+
+#solving for earth surface temperature without atmosphere
+# Energy balance (no atmosphere):
+# (1 - albedo) * ∫ I_nu_sun dν  =  4 * π * ∫ B_nu_earth(T) dν
+# where:
+#   I_nu_sun : spectral irradiance of the Sun at Earth (W/m²/Hz)
+#   B_nu_earth(T) : Planck spectral radiance of Earth at temperature T (W/m²/sr/Hz)
+#   albedo : fraction of sunlight reflected by Earth
+
+albedo = 0.296
+Leftside = (1 - albedo) * A_in
+
+Rightside = 4*np.pi*
+
+print(Leftside)
+print(Rightside)
