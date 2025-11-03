@@ -468,3 +468,68 @@ Rightside = 4*np.pi*F_total_with_CO2
 
 print(Leftside)
 print(Rightside)
+
+
+
+############################
+############################
+#-----------------------------
+# Earth surface temperature vs CO2 ppm
+
+co2_ppm_values = np.concatenate([
+    np.linspace(0, 100, 10),
+    np.linspace(100, 300, 10),
+    np.linspace(300, 600, 10)
+])
+surface_temperatures = []
+
+
+def Right_hand_side(T_surf, co2_ppm):
+    z0 = (k * T_surf) / (m_air * g)
+    deltaT = Gamma_LR * z0 * (-np.log(1.0 - eta))
+    T_trop = T_surf - deltaT
+
+    N0_co2 = (co2_ppm * 1e-6) * 101325.0 / (k * T_surf)
+    OD = N0_co2 * sigma_grid_m2 * z0
+
+    B_surf = planck_per_um(lam_grid_um, T_surf)
+    B_trop = planck_per_um(lam_grid_um, T_trop)
+
+    I_toa = B_surf * np.exp(-OD) + B_trop * (1.0 - np.exp(-OD))
+    F_toa = I_toa * np.pi
+    F_total_with_CO2 = integrate.simpson(F_toa, lam_grid_um)
+
+    return 4 * np.pi * F_total_with_CO2
+
+
+for co2_ppm in co2_ppm_values:
+    func = lambda T: Leftside - Right_hand_side(T, co2_ppm)
+    T_initial_guess = 255.0
+    T_solution = fsolve(func, T_initial_guess)[0]
+    surface_temperatures.append(T_solution)
+
+target_ppm = 400
+idx_400 = np.argmin(np.abs(co2_ppm_values - target_ppm))
+T_400 = surface_temperatures[idx_400]
+
+# Plotting
+plt.figure(figsize=(10, 6))
+plt.plot(co2_ppm_values, surface_temperatures, marker='o')
+# Get axis limits
+x_min, x_max = -100, 700
+y_min, y_max = -100, 350
+plt.xlim(-20, 620)
+plt.ylim(253, 269)
+
+# Draw vertical line from bottom of y-axis up to the curve
+plt.plot([target_ppm, target_ppm], [y_min, T_400],
+         linestyle='dotted', color='gray')
+
+# Draw horizontal line from left of x-axis to the curve
+plt.plot([x_min, target_ppm], [T_400, T_400],
+         linestyle='dotted', color='gray')
+
+plt.xlabel('CO2 Concentration (ppm)')
+plt.ylabel('Equilibrium Surface Temperature (K)')
+plt.title('Earth Surface Temperature vs CO2 Concentration')
+plt.show()
