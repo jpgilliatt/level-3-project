@@ -22,7 +22,7 @@ def planck_law_freq(frequency, temperature):
 def planck_law_lamda(wavelength, temperature):
     """Calculate the spectral radiance of a black body at a given temperature."""
     exponent = (h * c) / (wavelength * k * temperature)
-    return (2 * h * c**2) / (wavelength**5 * (np.exp(exponent) - 1))
+    return (2 * *np.pi * h * c**2) / (wavelength**5 * (np.exp(exponent) - 1))
 
 graphfrequencies = np.linspace(1e13, 3e15, 10000)
 
@@ -61,7 +61,7 @@ def planck_law_lambda_um(wavelength_um, T):
     wavelength_m = wavelength_um * 1e-6
     exponent = (h * c) / (wavelength_m * k * T)
     B = (2 * h * c**2) / (wavelength_m**5 * (np.exp(exponent) - 1))
-    return B * 1e-6  # Convert from per m to per µm
+    return B *np.pi * 1e-6  # Convert from per m to per µm
 
 # Scale from Sun surface → Earth orbit
 R_sun = 6.96e8  # m
@@ -383,8 +383,8 @@ wn_m = nu * 100.0                    # cm^-1 -> m^-1
 lam_m_from_wn = 1.0 / wn_m           # m
 lam_um_from_wn = lam_m_from_wn * 1e6 # µm
 
-lam_min_um, lam_max_um = 5.0, 25.0
-nlam = 20000
+lam_min_um, lam_max_um = 0.1, 1000.0
+nlam = 2000000
 lam_grid_um = np.linspace(lam_min_um, lam_max_um, nlam)
 # safe interpolation (sort source)
 order = np.argsort(lam_um_from_wn)
@@ -428,8 +428,8 @@ B_trop = planck_per_um(lam_grid_um, T_trop)
 I_toa = B_surf * np.exp(-OD) + B_trop * (1.0 - np.exp(-OD))
 
 # spectral flux at TOA (multiply by π) in W m^-2 µm^-1
-F_toa = I_toa
-F_clear = B_surf
+F_toa = I_toa * np.pi
+F_clear = B_surf * np.pi
 
 # -----------------------------
 # Plots
