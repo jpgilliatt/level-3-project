@@ -22,7 +22,7 @@ def planck_law_freq(frequency, temperature):
 def planck_law_lamda(wavelength, temperature):
     """Calculate the spectral radiance of a black body at a given temperature."""
     exponent = (h * c) / (wavelength * k * temperature)
-    return (2 * *np.pi * h * c**2) / (wavelength**5 * (np.exp(exponent) - 1))
+    return (2 * np.pi * h * c**2) / (wavelength**5 * (np.exp(exponent) - 1))
 
 graphfrequencies = np.linspace(1e13, 3e15, 10000)
 
@@ -346,7 +346,7 @@ hitran_file = '68ffa2cd.txt'   # replace if needed
 wn_min, wn_max = 400.0, 899.0  # cm^-1 band selection
 pressure_atm = 1.0             # atm
 CO2_ppm = 400                # ppm to model
-T_surf = 254.9                 # surface temperature K (choose 288 K typical)
+T_surf = 266.55                 # surface temperature K (choose 288 K typical)
 Gamma_LR = 0.00649             # K/m
 eta = 0.75
 
@@ -464,7 +464,7 @@ print(f"Integrated flux (with CO2) = {F_total_with_CO2:.3f} W/m^2")
 albedo = 0.296
 Leftside = (1 - albedo) * A_in
 
-Rightside = 4*np.pi*
+Rightside = 4*np.pi*F_total_with_CO2
 
 print(Leftside)
 print(Rightside)
