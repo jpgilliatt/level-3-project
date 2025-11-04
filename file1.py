@@ -66,7 +66,7 @@ def planck_law_lambda_um(wavelength_um, T):
 # Scale from Sun surface → Earth orbit
 R_sun = 6.96e8  # m
 AU = 1.496e11   # m
-scale_sun_to_earth = np.pi * (R_sun / AU)**2  # ≈ 6.82×10⁻⁵
+scale_sun_to_earth = (R_sun / AU)**2  # ≈ 6.82×10⁻⁵
 
 # Convert spectral irradiance per λ to per ν
 def spectral_lambda_to_freq(E_lambda, wavelength_um):
@@ -99,7 +99,7 @@ E490Spectrum_Irradiance_freq = spectral_lambda_to_freq(E490Spectrum_Irradiance, 
 
 # Integrate (area under curves) in wavelength
 A_in = integrate.simpson(E_lambda_in, lamda_um)
-A_out = integrate.simpson(E_lambda_out, lamda_um)
+A_out = integrate.simpson(E_lambda_out, lamda_um)/np.pi
 A_E490 = integrate.simpson(E490Spectrum_Irradiance, E490Spectrum_lamda)
 
 print(A_out)
@@ -120,14 +120,6 @@ Rightside = 4*np.pi*A_out
 
 print(Leftside)
 print(Rightside)
-
-plt.figure(figsize=(10, 6))
-plt.plot(lamda_um, E_lambda_out, label='Outgoing (254.9 K)')
-plt.xlim(0,20)
-plt.xlabel('Wavelength (µm)')
-plt.ylabel('Spectral Irradiance (W m⁻² µm⁻¹)')
-plt.title('Outgoing Black Body Radiation Spectrum at 254.9 K')
-plt.show()
 
 # Plotting
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
