@@ -182,6 +182,30 @@ plt.tight_layout()
 plt.show()
 
 
+plt.figure(figsize=(10, 6))
+plt.loglog(lamda_um, E_lambda_in, label='Incoming (5770 K)', alpha=0.6)
+plt.loglog(lamda_um, E_lambda_out, label='Outgoing (254.9 K)')
+plt.loglog(E490Spectrum_lamda, E490Spectrum_Irradiance,
+           label='E490 Solar Spectrum', color='green')
+plt.xlim(0.1, 700)  # Set x-axis limits for better visibility
+plt.ylim(1e-5, 1e4)
+plt.xlabel('Wavelength (µm)')
+plt.ylabel('Spectral Irradiance (W m⁻² µm⁻¹)')
+plt.title('Log–log scale — Wavelength domain')
+plt.text(
+    0.05, 0.05,   # (x, y) in Axes coords → near bottom-left
+    f"∫ Incoming: {A_in:.1f} W/m²\n"
+    f"∫ Outgoing: {A_out:.1f} W/m²\n"
+    f"∫ E490: {A_E490:.1f} W/m²",
+    transform=plt.gca().transAxes,
+    fontsize=10,
+    verticalalignment='bottom',
+    bbox=dict(facecolor='white', alpha=0.8, edgecolor='none')
+)
+plt.legend()
+plt.show()
+
+
 ##########################
 ##########################
 
