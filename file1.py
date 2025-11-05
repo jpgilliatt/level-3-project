@@ -332,17 +332,17 @@ plt.xlim(600, 740)
 plt.ylim(1e-22, 1e-17)
 plt.yscale('log')
 
-plt.plot(nu, sigma, color='blue', lw=1.5, label='Lorentzian cross-section',zorder=1)
-plt.scatter(nu0, S, color='red', s=5, alpha=0.8, label='HITRAN lines', zorder=2)
+plt.plot(nu, sigma, color='blue', lw=1.5, label='Lorentzian',zorder=1)
+plt.scatter(nu0, S, color='red', s=5, alpha=0.8, label='HITRAN CO2 data', zorder=2)
 plt.plot(nu_left, fit_left, color='yellow',linestyle= '--', lw=3, zorder=3)
 plt.plot(nu_right, fit_right, color='yellow', linestyle= '--', lw=3, zorder=3, label='Least Squares fit')
-plt.plot(nu, sigma_lor_fit, color='green', linestyle= '--',lw=2, label='Full LS Lorentz fit', zorder=4)
+plt.plot(nu, sigma_lor_fit, color='green', linestyle= '--',lw=2, label='Single Lorentzian peak fit', zorder=4)
 
 
 plt.xlabel('Wavenumber (cm⁻¹)')
-plt.ylabel('Absorption cross-section (cm²/molecule)', color='blue')
+plt.ylabel('Absorption cross-section (cm²/molecule)')
 plt.legend()
-plt.tick_params(axis='y', labelcolor='blue')
+plt.tick_params(axis='y')
 plt.show()
 
 ##############################################################
@@ -456,10 +456,9 @@ plt.plot(lam_grid_um, F_toa, label=f'With CO2 ({int(CO2_ppm)} ppm)', color='C1',
 plt.xlim(5, 25)
 plt.ylim(0, np.max(F_clear[(lam_grid_um>8)&(lam_grid_um<12)])*1.2)
 plt.xlabel('Wavelength (µm)')
-plt.ylabel('Spectral flux at TOA (W m$^{-2}$ µm$^{-1}$)')
+plt.ylabel('Spectral Irradiance (W m⁻² µm⁻¹)')
 plt.title('Outgoing irradiance (single-slab isothermal troposphere, eqn (6))')
 plt.legend()
-plt.grid(alpha=0.3)
 plt.show()
 
 # integrate spectral flux (W m^-2)
