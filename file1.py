@@ -485,7 +485,6 @@ print(Leftside)
 print(Rightside)
 
 
-
 ############################
 ############################
 #-----------------------------
@@ -514,7 +513,7 @@ def Right_hand_side(T_surf, co2_ppm):
     F_toa = I_toa * np.pi
     F_total_with_CO2 = integrate.simpson(F_toa, lam_grid_um)
 
-    return 4 * np.pi * F_total_with_CO2
+    return 4 * F_total_with_CO2
 
 
 for co2_ppm in co2_ppm_values:
