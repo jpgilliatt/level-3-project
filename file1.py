@@ -375,6 +375,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy.constants import h, c, k, N_A
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
 
 # -----------------------------
 # User inputs / file
@@ -503,17 +505,22 @@ F_clear = B_surf * np.pi
 # -----------------------------
 # Plots
 # -----------------------------
+# Main plot
 plt.figure(figsize=(9,5))
 plt.plot(lam_grid_um, F_clear, label='No CO2 (clear)', color='C0', lw=1)
 plt.plot(lam_grid_um, F_toa, label=f'With CO2 ({int(CO2_ppm)} ppm)', color='C1', lw=1)
-plt.plot(lam_grid_um, F_toa_eq8, label='With CO2 (Eqn 8 approx)', color='C3', lw=1.2, linestyle='--')
-plt.xlim(5, 25)
-plt.ylim(0, np.max(F_clear[(lam_grid_um>8)&(lam_grid_um<12)])*1.2)
+plt.plot(lam_grid_um, F_toa_eq8, label='With CO2 - Gea-Banacloche approximation', color='g', lw=1.2, linestyle='--')
+
+# Focused x-axis range
+plt.xlim(8, 22)
+plt.ylim(0, np.max(F_clear[(lam_grid_um>12.5)&(lam_grid_um<19)])*1.2)
+
 plt.xlabel('Wavelength (µm)')
 plt.ylabel('Spectral Irradiance (W m⁻² µm⁻¹)')
-plt.title('Outgoing irradiance (single-slab isothermal troposphere, eqn (6))')
 plt.legend()
 plt.show()
+
+
 
 # integrate spectral flux (W m^-2)
 F_total_with_CO2 = integrate.simpson(F_toa, lam_grid_um)   # W/m^2
