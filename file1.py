@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 from scipy.integrate import quad
 import pandas as pd
+import os
+os.chdir('/Users/charr/Documents/level-3-project')
+print("Current Working Directory:", os.getcwd())
 
 
 h = 6.626e-34  # Planck's constant (J·s)
@@ -97,6 +100,7 @@ E490Spectrum_Irradiance = E490Spectrum['Irradiance_W_m2_micro_m']
 E490Spectrum_freq = c / (E490Spectrum_lamda * 1e-6)
 E490Spectrum_Irradiance_freq = spectral_lambda_to_freq(E490Spectrum_Irradiance, E490Spectrum_lamda)
 
+
 # Integrate (area under curves) in wavelength
 A_in = integrate.simpson(E_lambda_in, lamda_um)
 A_out = integrate.simpson(E_lambda_out, lamda_um)/np.pi
@@ -104,6 +108,7 @@ A_E490 = integrate.simpson(E490Spectrum_Irradiance, E490Spectrum_lamda)
 
 print(A_out)
 print(A_in)
+
 
 #solving for earth surface temperature without atmosphere
 # Energy balance (no atmosphere):
@@ -325,6 +330,21 @@ A_fit, nu0_fit, Gamma_fit = popt
 sigma_lor_fit = lorentz(nu, *popt)
 
 # -----------------------------
+# Equation (8) absorption cross-section (triangular log profile)
+# -----------------------------
+nu_eq8 = nu  # reuse same grid for consistency
+nu0_eq8 = 667.5  # cm⁻¹
+sigma0_eq8 = 3.71e-19  # m²
+r_plus = 0.092  # cm
+r_minus = 0.086  # cm
+
+sigma_eq8 = np.zeros_like(nu_eq8)
+for i, nu_val in enumerate(nu_eq8):
+    delta_nu = abs(nu_val - nu0_eq8)
+    r = r_plus if nu_val > nu0_eq8 else r_minus
+    sigma_eq8[i] = sigma0_eq8 * np.exp(-r * delta_nu)
+
+# -----------------------------
 # Plotting
 # -----------------------------
 plt.figure(figsize=(10, 6))
@@ -337,6 +357,7 @@ plt.scatter(nu0, S, color='red', s=5, alpha=0.8, label='HITRAN CO2 data', zorder
 plt.plot(nu_left, fit_left, color='yellow',linestyle= '--', lw=3, zorder=3)
 plt.plot(nu_right, fit_right, color='yellow', linestyle= '--', lw=3, zorder=3, label='Least Squares fit')
 plt.plot(nu, sigma_lor_fit, color='green', linestyle= '--',lw=2, label='Single Lorentzian peak fit', zorder=4)
+plt.plot(nu_eq8, sigma_eq8, color='black', linestyle= ':', lw=2, label='Eqn (8) fit', zorder=5)
 
 
 plt.xlabel('Wavenumber (cm⁻¹)')
@@ -446,6 +467,7 @@ I_toa = B_surf * np.exp(-OD) + B_trop * (1.0 - np.exp(-OD))
 # spectral flux at TOA (multiply by π) in W m^-2 µm^-1
 F_toa = I_toa * np.pi
 F_clear = B_surf * np.pi
+
 
 # -----------------------------
 # Plots
