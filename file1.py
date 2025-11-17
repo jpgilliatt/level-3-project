@@ -191,8 +191,8 @@ plt.figure(figsize=(10, 6))
 plt.loglog(lamda_um, E_lambda_in, label='Incoming (5770 K)', alpha=0.6)
 plt.loglog(lamda_um, E_lambda_out, label='Outgoing (254.9 K)')
 plt.loglog(E490Spectrum_lamda, E490Spectrum_Irradiance,
-           label='E490 Solar Spectrum', color='green')
-plt.xlim(0.1, 700)  # Set x-axis limits for better visibility
+           label='E490 Solar Spectrum', color='green', alpha=0.5)
+plt.xlim(0.1, 400)  # Set x-axis limits for better visibility
 plt.ylim(1e-5, 1e4)
 plt.xlabel('Wavelength (µm)')
 plt.ylabel('Spectral Irradiance (W m⁻² µm⁻¹)')
@@ -210,6 +210,16 @@ plt.text(
 plt.legend()
 plt.show()
 
+# Zoomed-in plot (0.2–2 µm)
+plt.figure(figsize=(8, 5))
+plt.plot(lamda_um, E_lambda_in, label='Incoming (5770 K)', alpha=1)
+plt.plot(E490Spectrum_lamda, E490Spectrum_Irradiance,
+           label='E490 Solar Spectrum', color='green', alpha=1)
+plt.xlim(0.2, 1)
+plt.xlabel('Wavelength (µm)')
+plt.ylabel('Spectral Irradiance (W m⁻² µm⁻¹)')
+plt.title('Zoomed view: Solar spectrum region (0.2–2 µm)')
+plt.show()
 
 ##########################
 ##########################
