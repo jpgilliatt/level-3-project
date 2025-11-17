@@ -414,6 +414,37 @@ for i in range(len(nu0)):
 sigma_m2_per_mol = sigma_cm2_per_mol * 1e-4
 
 # -----------------------------
+# Equation (8) absorption cross-section (triangular log-profile)
+# -----------------------------
+nu_eq8 = nu  # reuse same wavenumber grid
+nu0_eq8 = 667.5  # cm⁻¹
+sigma0_eq8 = 3.71e-23  # m²
+r_plus = 0.092  # cm
+r_minus = 0.086  # cm
+
+sigma_eq8_m2 = np.zeros_like(nu_eq8)
+for i, nu_val in enumerate(nu_eq8):
+    delta_nu = abs(nu_val - nu0_eq8)
+    r = r_plus if nu_val > nu0_eq8 else r_minus
+    sigma_eq8_m2[i] = sigma0_eq8 * np.exp(-r * delta_nu)
+
+# Convert wavenumber to wavelength (µm)
+wn_m_eq8 = nu_eq8 * 100.0
+lam_m_eq8 = 1.0 / wn_m_eq8
+lam_um_eq8 = lam_m_eq8 * 1e6
+
+# Interpolate onto lam_grid_um
+order_eq8 = np.argsort(lam_um_eq8)
+interp_sigma_eq8 = interp1d(lam_um_eq8[order_eq8], sigma_eq8_m2[order_eq8],
+                            bounds_error=False, fill_value=0.0)
+sigma_eq8_grid_m2 = interp_sigma_eq8(lam_grid_um)
+
+OD_eq8 = N0_co2 * sigma_eq8_grid_m2 * z0
+I_toa_eq8 = B_surf * np.exp(-OD_eq8) + B_trop * (1.0 - np.exp(-OD_eq8))
+F_toa_eq8 = I_toa_eq8 * np.pi
+
+
+# -----------------------------
 # Interpolate sigma(λ) onto regular wavelength grid (µm)
 # -----------------------------
 wn_m = nu * 100.0                    # cm^-1 -> m^-1
@@ -475,6 +506,7 @@ F_clear = B_surf * np.pi
 plt.figure(figsize=(9,5))
 plt.plot(lam_grid_um, F_clear, label='No CO2 (clear)', color='C0', lw=1)
 plt.plot(lam_grid_um, F_toa, label=f'With CO2 ({int(CO2_ppm)} ppm)', color='C1', lw=1)
+plt.plot(lam_grid_um, F_toa_eq8, label='With CO2 (Eqn 8 approx)', color='C3', lw=1.2, linestyle='--')
 plt.xlim(5, 25)
 plt.ylim(0, np.max(F_clear[(lam_grid_um>8)&(lam_grid_um<12)])*1.2)
 plt.xlabel('Wavelength (µm)')
