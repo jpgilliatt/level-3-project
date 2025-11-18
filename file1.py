@@ -362,12 +362,10 @@ plt.xlim(600, 740)
 plt.ylim(1e-22, 1e-17)
 plt.yscale('log')
 
-plt.plot(nu, sigma, color='blue', lw=1.5, label='Lorentzian',zorder=1)
+plt.plot(nu, sigma, color='orange', lw=1.5, label='Lorentzian',zorder=1)
 plt.scatter(nu0, S, color='red', s=5, alpha=0.8, label='HITRAN CO2 data', zorder=2)
-plt.plot(nu_left, fit_left, color='yellow',linestyle= '--', lw=3, zorder=3)
-plt.plot(nu_right, fit_right, color='yellow', linestyle= '--', lw=3, zorder=3, label='Least Squares fit')
-plt.plot(nu, sigma_lor_fit, color='green', linestyle= '--',lw=2, label='Single Lorentzian peak fit', zorder=4)
-plt.plot(nu_eq8, sigma_eq8, color='black', linestyle= ':', lw=2, label='Eqn (8) fit', zorder=5)
+plt.plot(nu, sigma_lor_fit, color='black', linestyle= '--',lw=2, label='Single Lorentzian peak fit', zorder=4)
+plt.plot(nu_eq8, sigma_eq8, color='green', linestyle= '--', lw=2, label='Gea-Banacloche Approximation', zorder=5)
 
 
 plt.xlabel('Wavenumber (cm⁻¹)')
